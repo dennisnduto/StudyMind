@@ -1,82 +1,73 @@
-"use client";
-
-import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, BrainCircuit, FileText, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, BrainCircuit, FileQuestion, FileText, MessageSquareText, UploadCloud } from "lucide-react";
+
+const modules = [
+  { title: "Upload materials", detail: "PDF, DOCX, and TXT intake flow.", icon: UploadCloud },
+  { title: "AI summaries", detail: "Structured revision notes from documents.", icon: FileText },
+  { title: "Document chat", detail: "Ask questions against uploaded content.", icon: MessageSquareText },
+  { title: "Quiz generation", detail: "Practice questions with explanations.", icon: FileQuestion },
+  { title: "Analytics", detail: "Progress, scores, and recommendations.", icon: BarChart3 },
+];
 
 export default function Home() {
   return (
-    <main className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 text-center">
-      <div className="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-neutral-950 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
-      
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-3xl space-y-8"
-      >
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-sm font-medium">
-          <Sparkles className="w-4 h-4" />
-          <span>The Ultimate AI Study Companion</span>
-        </div>
-        
-        <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-neutral-900 dark:text-white">
-          Master Your Studies with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">StudyMind</span>
-        </h1>
-        
-        <p className="text-xl text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto leading-relaxed">
-          Upload your notes, PDFs, or images and let our AI generate summaries, interactive quizzes, and explain complex concepts in seconds.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Link
-            href="/register"
-            className="group flex items-center gap-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-8 py-4 rounded-full font-medium transition-transform hover:scale-105 active:scale-95"
-          >
-            Get Started Free
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+    <main className="min-h-screen bg-[#f7f8fb] text-slate-950 dark:bg-[#101114] dark:text-white">
+      <section className="mx-auto grid min-h-screen max-w-7xl content-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_0.9fr] lg:px-8">
+        <div className="flex flex-col justify-center">
+          <Link href="/" className="mb-10 flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <BrainCircuit className="h-6 w-6" />
+            </span>
+            <span className="text-xl font-bold">StudyMind AI</span>
           </Link>
-          <Link
-            href="/login"
-            className="px-8 py-4 rounded-full font-medium text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
-          >
-            Sign In
-          </Link>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.2 }}
-        className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full text-left"
-      >
-        {[
-          {
-            icon: <FileText className="w-6 h-6 text-indigo-500" />,
-            title: "Instant Summaries",
-            desc: "Upload any document and get instant, structured summaries of key points and formulas."
-          },
-          {
-            icon: <BrainCircuit className="w-6 h-6 text-purple-500" />,
-            title: "Context-Aware Chat",
-            desc: "Ask questions and get answers strictly based on the material in your uploaded notes."
-          },
-          {
-            icon: <Sparkles className="w-6 h-6 text-pink-500" />,
-            title: "Auto Quiz Generator",
-            desc: "Test your knowledge with automatically generated multiple-choice quizzes and explanations."
-          }
-        ].map((feature, idx) => (
-          <div key={idx} className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
-            <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
-              {feature.icon}
-            </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">{feature.title}</h3>
-            <p className="text-neutral-600 dark:text-neutral-400">{feature.desc}</p>
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-300">AI-powered study assistant</p>
+          <h1 className="mt-3 max-w-3xl text-5xl font-bold leading-tight sm:text-6xl">StudyMind AI turns notes into summaries, chats, quizzes, and progress insights.</h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-400">
+            A modern frontend for students who need one place to upload material, understand it faster, practice actively, and track what to study next.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700">
+              Open demo workspace
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/login" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-white dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900">
+              Sign in
+            </Link>
           </div>
-        ))}
-      </motion.div>
+        </div>
+
+        <div className="flex items-center">
+          <div className="w-full rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#15171b]">
+            <div className="rounded-lg bg-slate-950 p-5 text-white dark:bg-slate-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-300">Today&apos;s focus</p>
+                  <h2 className="mt-1 text-2xl font-bold">Exam sprint</h2>
+                </div>
+                <BrainCircuit className="h-8 w-8 text-blue-300" />
+              </div>
+              <div className="mt-8 grid grid-cols-3 gap-3">
+                {["12 notes", "18 quizzes", "84% avg"].map((item) => (
+                  <div key={item} className="rounded-lg bg-white/10 p-3 text-center text-sm font-bold">{item}</div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {modules.map((module) => {
+                const Icon = module.icon;
+                return (
+                  <div key={module.title} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                    <Icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    <h3 className="mt-3 font-bold">{module.title}</h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{module.detail}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

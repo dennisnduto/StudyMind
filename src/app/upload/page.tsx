@@ -1,171 +1,104 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { UploadCloud, FileText, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import AppShell from "@/components/AppShell";
+import { CheckCircle2, FileText, Loader2, Sparkles, UploadCloud } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "parsing" | "summarizing" | "completed" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [summaryData, setSummaryData] = useState("");
-  const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "processing" | "done">("idle");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setUploadStatus("idle");
-      setErrorMessage("");
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     if (!file) return;
-
-    setIsLoading(true);
-    setUploadStatus("parsing");
-    setErrorMessage("");
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      // 1. Parsing step
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.ok ? await res.json() : null;
-
-      if (!res.ok || !data?.success) {
-        setUploadStatus("error");
-        setErrorMessage(data?.error || "Failed to process the document.");
-        setIsLoading(false);
-        return;
-      }
-
-      setUploadStatus("summarizing");
-      
-      // Simulate/wait for summarization details
-      setSummaryData(data.summary);
-      setUploadStatus("completed");
-    } catch (err) {
-      setUploadStatus("error");
-      setErrorMessage("Network error occurred during upload.");
-    } finally {
-      setIsLoading(false);
-    }
+    setStatus("processing");
+    window.setTimeout(() => setStatus("done"), 900);
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Upload Study Material</h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-          Upload PDFs, text files, or images of study material to extract, parse and summarize using AI.
-        </p>
-      </div>
-
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-8 shadow-sm">
-        {uploadStatus === "completed" ? (
-          <div className="text-center py-6 space-y-6">
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Processing Complete!</h2>
-              <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
-                Your file has been successfully uploaded, parsed, and summarized. You can now use it in chats or practice quizzes.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link
-                href="/dashboard"
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors"
-              >
-                Go to Dashboard
-              </Link>
-              <button
-                onClick={() => {
-                  setFile(null);
-                  setUploadStatus("idle");
-                }}
-                className="px-6 py-3 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800"
-              >
-                Upload Another File
-              </button>
-            </div>
+    <AppShell>
+      <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b] sm:p-6">
+          <div>
+            <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Document upload</p>
+            <h1 className="mt-2 text-3xl font-bold">Turn study material into learning assets.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Frontend flow supports PDF, DOCX, and TXT. The backend can connect this form to parsing, storage, summarization, and retrieval indexing.
+            </p>
           </div>
-        ) : (
-          <form onSubmit={handleUpload} className="space-y-6">
-            {/* File Dropzone */}
-            <div className="border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl p-8 text-center hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors">
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <label
+              htmlFor="material"
+              className="flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-blue-500 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-400 dark:hover:bg-blue-500/10"
+            >
+              <UploadCloud className="h-12 w-12 text-blue-600 dark:text-blue-300" />
+              <span className="mt-4 text-lg font-bold">{file ? file.name : "Choose a study file"}</span>
+              <span className="mt-2 text-sm text-slate-500 dark:text-slate-400">PDF, DOCX, or TXT up to 25MB</span>
               <input
+                id="material"
                 type="file"
-                id="file-upload"
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".pdf,.txt,.png,.jpg,.jpeg,.webp"
+                accept=".pdf,.docx,.txt"
+                className="sr-only"
+                onChange={(event) => {
+                  setFile(event.target.files?.[0] || null);
+                  setStatus("idle");
+                }}
               />
-              <label htmlFor="file-upload" className="cursor-pointer space-y-4 block">
-                <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto">
-                  <UploadCloud className="w-8 h-8" />
-                </div>
-                <div className="space-y-1">
-                  <p className="font-semibold text-neutral-700 dark:text-neutral-300">
-                    {file ? file.name : "Click to upload files"}
-                  </p>
-                  <p className="text-sm text-neutral-400">
-                    PDF, TXT, PNG, JPG, or WEBP up to 10MB
-                  </p>
-                </div>
-              </label>
-            </div>
+            </label>
 
-            {uploadStatus === "error" && (
-              <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm rounded-xl">
-                {errorMessage}
-              </div>
-            )}
-
-            {isLoading && (
-              <div className="p-5 bg-indigo-50/50 dark:bg-indigo-950/10 rounded-2xl flex items-center gap-4">
-                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-                <div className="flex-1 text-sm text-neutral-600 dark:text-neutral-400">
-                  {uploadStatus === "parsing" ? (
-                    <p className="font-medium animate-pulse">Extracting text and details...</p>
-                  ) : (
-                    <p className="font-medium animate-pulse">Formulating AI summaries and definitions...</p>
-                  )}
+            {file && (
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-slate-500" />
+                  <div>
+                    <p className="text-sm font-bold">{file.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{Math.max(1, Math.round(file.size / 1024))} KB ready to process</p>
+                  </div>
                 </div>
+                {status === "done" && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={!file || isLoading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              disabled={!file || status === "processing"}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing File...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Analyze Document
-                </>
-              )}
+              {status === "processing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {status === "processing" ? "Extracting and summarizing..." : "Analyze document"}
             </button>
           </form>
-        )}
+        </section>
+
+        <aside className="space-y-6">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b]">
+            <h2 className="font-bold">Expected output</h2>
+            <div className="mt-4 space-y-3">
+              {["Clean extracted text", "Concise study summary", "Quiz-ready concepts", "Chat retrieval context"].map((item) => (
+                <div key={item} className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {status === "done" && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+              <h2 className="font-bold text-emerald-800 dark:text-emerald-200">Frontend preview complete</h2>
+              <p className="mt-2 text-sm leading-6 text-emerald-700 dark:text-emerald-300">
+                The backend can now return a real document id, summary, and extracted text using this same interaction.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <Link href="/dashboard" className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white">Dashboard</Link>
+                <Link href="/chat" className="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-bold text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200">Chat</Link>
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
-    </div>
+    </AppShell>
   );
 }

@@ -1,244 +1,94 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Sparkles, 
-  BookOpen, 
-  Award, 
-  Calendar, 
-  AlertCircle, 
-  ChevronRight 
-} from "lucide-react";
+import AppShell from "@/components/AppShell";
+import { demoQuizResults, demoStats } from "@/lib/demo-data";
+import { AlertTriangle, Award, BarChart3, BookOpen, CalendarDays, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
-interface QuizResult {
-  id: string;
-  quizTitle: string;
-  score: number;
-  total: number;
-  percentage: number;
-  createdAt: string;
-}
-
-interface Stats {
-  totalUploads: number;
-  totalQuizzes: number;
-  averageScore: number;
-  studyFrequency: number;
-}
-
 export default function AnalyticsPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchAnalytics = async () => {
-    try {
-      const res = await fetch("/api/analytics");
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data.stats);
-        setQuizResults(data.quizResults);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  // Find weak topics / insights
-  const lowScores = quizResults.filter(q => q.percentage < 70);
-  const averageAccuracy = stats?.averageScore || 0;
+  const weakResults = demoQuizResults.filter((result) => result.percentage < 70);
 
   return (
-    <div className="space-y-8">
-      {/* Title */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Study Insights & Progress</h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-          Detailed metrics tracking your uploads, quiz scores, accuracy, and study frequency.
-        </p>
-      </div>
+    <AppShell>
+      <div className="space-y-6">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b] sm:p-6">
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Study analytics</p>
+          <h1 className="mt-2 text-3xl font-bold">Progress you can act on.</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+            Track learning activity, quiz accuracy, and recommended next actions. These cards are ready to bind to real analytics endpoints.
+          </p>
+        </section>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: "Total Uploaded Material", value: stats?.totalUploads || 0, change: "+12% this week", icon: <BookOpen className="w-5 h-5 text-indigo-500" /> },
-          { label: "Practice Quizzes taken", value: stats?.totalQuizzes || 0, change: "+4% this week", icon: <Sparkles className="w-5 h-5 text-purple-500" /> },
-          { label: "Average Quiz Score", value: `${averageAccuracy}%`, change: "Overall accuracy", icon: <Award className="w-5 h-5 text-emerald-500" /> },
-          { label: "Study Frequency", value: `${stats?.studyFrequency || 1} days`, change: "Streak days active", icon: <Calendar className="w-5 h-5 text-pink-500" /> }
-        ].map((item, idx) => (
-          <div key={idx} className="p-6 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-neutral-500 dark:text-neutral-400">{item.label}</span>
-              {item.icon}
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-neutral-950 dark:text-white">{item.value}</p>
-              <p className="text-xs text-neutral-400 mt-1">{item.change}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Performance SVG Line Chart (Left/Center) */}
-        <div className="lg:col-span-2 p-6 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-indigo-500" />
-              Quiz Performance Trend
-            </h3>
-            <span className="text-xs text-indigo-500 font-semibold bg-indigo-50 dark:bg-indigo-950/30 px-2.5 py-1 rounded-full">
-              Last 10 Attempts
-            </span>
-          </div>
-
-          {quizResults.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center h-64 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-400">
-              <BarChart3 className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mb-2" />
-              <p className="text-sm">Practice a quiz to start plotting your performance trend chart.</p>
-            </div>
-          ) : (
-            <div className="space-y-4 pt-4">
-              {/* Premium custom SVG line chart */}
-              <div className="relative w-full h-64">
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200">
-                  {/* Grid Lines */}
-                  {[0, 50, 100, 150].map((yVal, i) => (
-                    <line
-                      key={i}
-                      x1="0"
-                      y1={yVal}
-                      x2="500"
-                      y2={yVal}
-                      stroke="currentColor"
-                      className="text-neutral-100 dark:text-neutral-800"
-                      strokeWidth="1"
-                    />
-                  ))}
-
-                  {/* Draw score line */}
-                  <path
-                    d={
-                      (() => {
-                        const points = quizResults
-                          .slice()
-                          .reverse()
-                          .map((q, idx) => {
-                            const x = (idx / (Math.max(quizResults.length - 1, 1))) * 500;
-                            // mapping percentage 0..100 to y position 170..20
-                            const y = 170 - (q.percentage / 100) * 150;
-                            return `${x},${y}`;
-                          });
-                        return `M ${points.join(" L ")}`;
-                      })()
-                    }
-                    fill="none"
-                    stroke="#6366f1"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-
-                  {/* Draw points */}
-                  {quizResults
-                    .slice()
-                    .reverse()
-                    .map((q, idx) => {
-                      const x = (idx / (Math.max(quizResults.length - 1, 1))) * 500;
-                      const y = 170 - (q.percentage / 100) * 150;
-                      return (
-                        <g key={q.id} className="group cursor-pointer">
-                          <circle
-                            cx={x}
-                            cy={y}
-                            r="6"
-                            fill="#6366f1"
-                            stroke="#ffffff"
-                            strokeWidth="2.5"
-                          />
-                        </g>
-                      );
-                    })}
-                </svg>
-
-                {/* X Axis Labels */}
-                <div className="flex justify-between text-[10px] text-neutral-400 mt-2 font-medium">
-                  <span>First Practice</span>
-                  <span>Latest Attempt</span>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Uploaded materials", value: demoStats.totalUploads, icon: BookOpen },
+            { label: "Quizzes completed", value: demoStats.totalQuizzes, icon: BarChart3 },
+            { label: "Average score", value: `${demoStats.averageScore}%`, icon: Award },
+            { label: "Active days", value: demoStats.studyFrequency, icon: CalendarDays },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b]">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{item.label}</span>
+                  <Icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                 </div>
+                <p className="mt-4 text-3xl font-bold">{item.value}</p>
               </div>
+            );
+          })}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1.4fr_0.7fr]">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b]">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold">Quiz performance</h2>
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
             </div>
-          )}
-        </div>
+            <div className="mt-6 h-72">
+              <svg viewBox="0 0 600 260" className="h-full w-full overflow-visible">
+                {[40, 100, 160, 220].map((y) => (
+                  <line key={y} x1="0" x2="600" y1={y} y2={y} stroke="currentColor" className="text-slate-100 dark:text-slate-800" />
+                ))}
+                <polyline
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={demoQuizResults
+                    .map((result, index) => `${(index / (demoQuizResults.length - 1)) * 600},${230 - result.percentage * 1.9}`)
+                    .join(" ")}
+                />
+                {demoQuizResults.map((result, index) => (
+                  <circle key={result.id} cx={(index / (demoQuizResults.length - 1)) * 600} cy={230 - result.percentage * 1.9} r="7" fill="#10b981" />
+                ))}
+              </svg>
+            </div>
+          </div>
 
-        {/* Actionable Weak Topics / AI Coach insights (Right) */}
-        <div className="p-6 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-6">
-          <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-pink-500" />
-            AI Smart Recommendation
-          </h3>
-
-          <div className="space-y-4">
-            {lowScores.length > 0 ? (
-              <>
-                <div className="p-4 bg-pink-50 dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/50 rounded-xl">
-                  <p className="text-sm font-semibold text-pink-700 dark:text-pink-400">Improve Accuracy</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                    You scored below 70% in {lowScores.length} quizzes. We recommend re-reading the notes and starting a chat study session.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-400">Target Chapters</p>
-                  {lowScores.slice(0, 3).map((result) => (
-                    <div key={result.id} className="flex justify-between items-center text-sm py-1">
-                      <span className="truncate text-neutral-700 dark:text-neutral-300 font-medium">
-                        {result.quizTitle}
-                      </span>
-                      <span className="text-xs text-red-500 font-bold whitespace-nowrap">
-                        {result.percentage}% Accuracy
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-xl space-y-1">
-                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Excellent Accuracy!</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                  Your average quiz accuracy is {averageAccuracy}%. Keep up the great work! Try uploading more advanced materials to test your limits.
+          <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b]">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <h2 className="font-bold">Recommendation</h2>
+            </div>
+            {weakResults.length > 0 ? (
+              <div className="mt-5 rounded-lg bg-amber-50 p-4 dark:bg-amber-500/10">
+                <p className="font-bold text-amber-900 dark:text-amber-200">Review integration methods</p>
+                <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-300">
+                  Your lowest demo score is 60%. Start a chat session, ask for worked examples, then regenerate a quiz.
                 </p>
               </div>
+            ) : (
+              <div className="mt-5 rounded-lg bg-emerald-50 p-4 dark:bg-emerald-500/10">
+                <p className="font-bold text-emerald-900 dark:text-emerald-200">Strong progress</p>
+                <p className="mt-2 text-sm leading-6 text-emerald-800 dark:text-emerald-300">Keep expanding your study set with harder materials.</p>
+              </div>
             )}
-
-            <Link
-              href="/quiz"
-              className="w-full flex items-center justify-between p-3.5 bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-semibold text-neutral-800 dark:text-neutral-200 transition-colors"
-            >
-              <span>Practice weak areas</span>
-              <ChevronRight className="w-4 h-4" />
+            <Link href="/quiz" className="mt-5 inline-flex w-full justify-center rounded-lg bg-slate-950 px-4 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950">
+              Practice recommended topic
             </Link>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </AppShell>
   );
 }

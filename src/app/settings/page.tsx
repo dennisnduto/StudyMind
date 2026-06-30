@@ -1,117 +1,71 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import AppShell from "@/components/AppShell";
+import { Bell, BrainCircuit, Database, Shield, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
-import { User, Shield, Moon, Bell, BrainCircuit } from "lucide-react";
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
-  const [theme, setTheme] = useState("dark");
   const [notifications, setNotifications] = useState(true);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    // Standard visual class manipulation for HTML root element
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+  const [adaptivePlan, setAdaptivePlan] = useState(true);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Account Settings</h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-          Manage your AI preferences, dark/light styling modes, and account statistics.
-        </p>
+    <AppShell>
+      <div className="mx-auto max-w-3xl space-y-6">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b] sm:p-6">
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Settings</p>
+          <h1 className="mt-2 text-3xl font-bold">Tune your study workspace.</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+            Frontend controls for preferences, notifications, AI behavior, and security states.
+          </p>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
+          {[
+            { icon: BrainCircuit, title: "AI recommendation engine", detail: "Personalize suggestions using quiz outcomes and recent materials.", enabled: adaptivePlan, onClick: () => setAdaptivePlan((value) => !value) },
+            { icon: Bell, title: "Study reminders", detail: "Send reminders for planned reviews and unfinished quizzes.", enabled: notifications, onClick: () => setNotifications((value) => !value) },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className="flex items-center justify-between gap-4 border-b border-slate-200 p-5 last:border-b-0 dark:border-slate-800">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="font-bold">{item.title}</h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.detail}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={item.onClick}
+                  className={`flex h-7 w-12 items-center rounded-full p-1 transition ${item.enabled ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700"}`}
+                  aria-label={item.title}
+                >
+                  <span className={`h-5 w-5 rounded-full bg-white transition ${item.enabled ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            );
+          })}
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-3">
+          {[
+            { icon: Shield, title: "Auth", detail: "NextAuth ready" },
+            { icon: Database, title: "Data", detail: "Prisma schema ready" },
+            { icon: SlidersHorizontal, title: "Theme", detail: "Header toggle ready" },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b]">
+                <Icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                <h2 className="mt-4 font-bold">{item.title}</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.detail}</p>
+              </div>
+            );
+          })}
+        </section>
       </div>
-
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-8 shadow-sm space-y-6">
-        {/* User Card */}
-        <div className="flex items-center gap-4 p-4 bg-neutral-50 dark:bg-neutral-800/30 rounded-xl border border-neutral-200/60 dark:border-neutral-800">
-          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 rounded-full">
-            <User className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-neutral-900 dark:text-white">{session?.user?.name || "Student"}</h3>
-            <p className="text-sm text-neutral-400">{session?.user?.email}</p>
-          </div>
-        </div>
-
-        {/* Configuration settings options */}
-        <div className="space-y-4 pt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
-          {/* Appearance Toggle */}
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <Moon className="w-5 h-5 text-indigo-500" />
-              <div>
-                <p className="font-semibold text-neutral-900 dark:text-white text-sm">Dark Mode</p>
-                <p className="text-xs text-neutral-400">Toggle dark mode visual layout</p>
-              </div>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className="relative inline-flex h-6 w-11 items-center rounded-full bg-neutral-200 dark:bg-indigo-600 transition-colors"
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                theme === "dark" ? "translate-x-6" : "translate-x-1"
-              }`} />
-            </button>
-          </div>
-
-          {/* AI Settings Info */}
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <BrainCircuit className="w-5 h-5 text-purple-500" />
-              <div>
-                <p className="font-semibold text-neutral-900 dark:text-white text-sm">AI Recommendation Engine</p>
-                <p className="text-xs text-neutral-400">Always optimize study recommendations based on performance</p>
-              </div>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full">
-              Active
-            </span>
-          </div>
-
-          {/* Smart Alerts */}
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-pink-500" />
-              <div>
-                <p className="font-semibold text-neutral-900 dark:text-white text-sm">Study Reminder Alerts</p>
-                <p className="text-xs text-neutral-400">Reminders when a target topic study date is coming up</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setNotifications(!notifications)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notifications ? "bg-indigo-600" : "bg-neutral-200"
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                notifications ? "translate-x-6" : "translate-x-1"
-              }`} />
-            </button>
-          </div>
-
-          {/* Security */}
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <Shield className="w-5 h-5 text-blue-500" />
-              <div>
-                <p className="font-semibold text-neutral-900 dark:text-white text-sm">Privacy & Security</p>
-                <p className="text-xs text-neutral-400">Isolated database row encryption activated</p>
-              </div>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-full">
-              Secured
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+    </AppShell>
   );
 }

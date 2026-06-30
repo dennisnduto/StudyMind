@@ -1,218 +1,130 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import AppShell from "@/components/AppShell";
+import { demoDocuments } from "@/lib/demo-data";
+import { Bot, FileText, Send, User } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Send, Bot, User, Brain, HelpCircle, Loader2 } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 
-interface Document {
-  id: string;
-  title: string;
-}
-
-interface Message {
-  id: string;
+type Message = {
   role: "user" | "assistant";
   content: string;
-  createdAt: string;
-}
+};
 
 export default function ChatPage() {
+  return (
+    <AppShell>
+      <Suspense fallback={<div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-[#15171b] dark:text-slate-400">Loading chat...</div>}>
+        <ChatContent />
+      </Suspense>
+    </AppShell>
+  );
+}
+
+function ChatContent() {
   const searchParams = useSearchParams();
-  const initialDocId = searchParams.get("docId") || "";
-
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const initialDocId = searchParams.get("docId") || demoDocuments[0].id;
   const [selectedDocId, setSelectedDocId] = useState(initialDocId);
-  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDataLoading, setIsDataLoading] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Choose a material and ask a study question. I will answer as if the backend has supplied grounded document context.",
+    },
+  ]);
 
-  const fetchDocuments = async () => {
-    try {
-      const res = await fetch("/api/analytics");
-      if (res.ok) {
-        const data = await res.json();
-        setDocuments(data.documents);
-        
-        // If a docId is passed in query, auto-initialize
-        if (initialDocId) {
-          setSelectedDocId(initialDocId);
-        } else if (data.documents.length > 0) {
-          setSelectedDocId(data.documents[0].id);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsDataLoading(false);
-    }
+  const selectedDoc = useMemo(() => demoDocuments.find((doc) => doc.id === selectedDocId) || demoDocuments[0], [selectedDocId]);
+
+  const sendMessage = (event: React.FormEvent) => {
+    event.preventDefault();
+    const cleanInput = input.trim();
+    if (!cleanInput) return;
+
+    setMessages((current) => [
+      ...current,
+      { role: "user", content: cleanInput },
+      {
+        role: "assistant",
+        content: `From "${selectedDoc.title}", the strongest study angle is: ${selectedDoc.summary} For a production backend, this response should be replaced by a retrieval-grounded answer with citations or source excerpts.`,
+      },
+    ]);
+    setInput("");
   };
-
-  useEffect(() => {
-    fetchDocuments();
-  }, [initialDocId]);
-
-  useEffect(() => {
-    // Reset chat if selected document changes
-    setMessages([]);
-    setChatSessionId(null);
-  }, [selectedDocId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || !selectedDocId || isLoading) return;
-
-    const userMsg = inputMessage;
-    setInputMessage("");
-    setIsLoading(true);
-
-    // Optimistically add user message
-    const tempUserMsg: Message = {
-      id: Math.random().toString(),
-      role: "user",
-      content: userMsg,
-      createdAt: new Date().toISOString()
-    };
-    setMessages((prev) => [...prev, tempUserMsg]);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          documentId: selectedDocId,
-          chatSessionId,
-          message: userMsg
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setChatSessionId(data.chatSessionId);
-        setMessages((prev) => [...prev, data.message]);
-      } else {
-        const err = await res.json();
-        // Add failure notification message
-        const systemErr: Message = {
-          id: Math.random().toString(),
-          role: "assistant",
-          content: err.error || "Failed to retrieve response from context.",
-          createdAt: new Date().toISOString()
-        };
-        setMessages((prev) => [...prev, systemErr]);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isDataLoading) {
-    return (
-      <div className="flex-1 flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-140px)] max-w-4xl mx-auto space-y-6">
-      {/* Header / Doc selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Brain className="w-6 h-6 text-indigo-500" />
-          <div>
-            <h1 className="text-xl font-bold text-neutral-900 dark:text-white">AI Document Chat</h1>
-            <p className="text-xs text-neutral-400">Ask questions and get answers constrained to your notes</p>
+    <div className="grid h-[calc(100vh-8rem)] min-h-[650px] gap-6 lg:grid-cols-[320px_1fr]">
+        <aside className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
+          <div className="border-b border-slate-200 p-5 dark:border-slate-800">
+            <p className="text-sm font-bold text-blue-700 dark:text-blue-300">AI document chat</p>
+            <h1 className="mt-2 text-2xl font-bold">Ask your notes</h1>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500 font-medium whitespace-nowrap">Study Material:</span>
-          {documents.length === 0 ? (
-            <span className="text-sm text-red-500">Please upload a document first!</span>
-          ) : (
-            <select
-              value={selectedDocId}
-              onChange={(e) => setSelectedDocId(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-sm font-medium text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {documents.map((doc) => (
-                <option key={doc.id} value={doc.id}>
-                  {doc.title}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-
-      {/* Messages Thread panel */}
-      <div className="flex-1 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden flex flex-col min-h-0">
-        <div className="flex-1 p-6 overflow-y-auto space-y-6">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center h-full text-neutral-400 space-y-3">
-              <Bot className="w-12 h-12 text-indigo-400 animate-pulse" />
-              <div className="space-y-1">
-                <h3 className="font-semibold text-neutral-700 dark:text-neutral-300">Ready to chat with your document!</h3>
-                <p className="text-sm text-neutral-400 max-w-sm">
-                  Ask me anything from the document. I will restrict my responses to what is written in the document content.
-                </p>
-              </div>
-            </div>
-          ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 max-w-[85%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
+          <div className="space-y-2 p-3">
+            {demoDocuments.map((doc) => (
+              <button
+                key={doc.id}
+                type="button"
+                onClick={() => setSelectedDocId(doc.id)}
+                className={`flex w-full items-start gap-3 rounded-lg p-3 text-left transition ${
+                  selectedDocId === doc.id
+                    ? "bg-blue-50 text-blue-800 dark:bg-blue-500/15 dark:text-blue-200"
+                    : "hover:bg-slate-50 dark:hover:bg-slate-900"
+                }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ${
-                  msg.role === "user" ? "bg-indigo-600" : "bg-neutral-700"
-                }`}>
-                  {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                </div>
-                <div className={`p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                  msg.role === "user" 
-                    ? "bg-indigo-600 text-white rounded-tr-none" 
-                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-tl-none border border-neutral-200/50 dark:border-neutral-700/50"
-                }`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+                <FileText className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  <span className="block text-sm font-bold">{doc.title}</span>
+                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{doc.fileType.toUpperCase()} material</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </aside>
 
-        {/* Input Bar */}
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+        <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
+          <div className="border-b border-slate-200 p-5 dark:border-slate-800">
+            <h2 className="font-bold">{selectedDoc.title}</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Grounded answer preview using demo document context.</p>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            {messages.map((message, index) => {
+              const isUser = message.role === "user";
+              return (
+                <div key={`${message.role}-${index}`} className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
+                  {!isUser && (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                      <Bot className="h-4 w-4" />
+                    </span>
+                  )}
+                  <div
+                    className={`max-w-[78%] rounded-lg px-4 py-3 text-sm leading-6 ${
+                      isUser ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                  {isUser && (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                      <User className="h-4 w-4" />
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <form onSubmit={sendMessage} className="flex gap-3 border-t border-slate-200 p-4 dark:border-slate-800">
             <input
-              type="text"
-              required
-              disabled={documents.length === 0 || isLoading}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              placeholder={documents.length === 0 ? "Please upload notes to get started..." : "Ask StudyMind anything about the selected document..."}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 focus:border-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+              placeholder="Ask for a summary, explanation, formula, or practice prompt..."
             />
-            <button
-              type="submit"
-              disabled={documents.length === 0 || isLoading}
-              className="p-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:bg-indigo-500 text-white rounded-xl transition-colors shadow-sm"
-            >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            <button type="submit" aria-label="Send message" className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600 text-white transition hover:bg-blue-700">
+              <Send className="h-5 w-5" />
             </button>
           </form>
-        </div>
-      </div>
+        </section>
     </div>
   );
 }
