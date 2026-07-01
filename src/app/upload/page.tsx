@@ -1,19 +1,53 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
-import { CheckCircle2, FileText, Loader2, Sparkles, UploadCloud } from "lucide-react";
+import StateMessage from "@/components/StateMessage";
+import { AlertTriangle, CheckCircle2, FileText, Loader2, Sparkles, UploadCloud } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+const allowedTypes = [".pdf", ".docx", ".txt"];
+const maxFileSize = 25 * 1024 * 1024;
+
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"idle" | "processing" | "done">("idle");
+  const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
+  const [feedback, setFeedback] = useState("");
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!file) return;
     setStatus("processing");
     window.setTimeout(() => setStatus("done"), 900);
+  };
+
+  const handleFileChange = (selectedFile: File | null) => {
+    setFeedback("");
+    setStatus("idle");
+
+    if (!selectedFile) {
+      setFile(null);
+      return;
+    }
+
+    const fileName = selectedFile.name.toLowerCase();
+    const hasAllowedType = allowedTypes.some((type) => fileName.endsWith(type));
+
+    if (!hasAllowedType) {
+      setFile(null);
+      setStatus("error");
+      setFeedback("Choose a PDF, DOCX, or TXT file.");
+      return;
+    }
+
+    if (selectedFile.size > maxFileSize) {
+      setFile(null);
+      setStatus("error");
+      setFeedback("Choose a file smaller than 25MB.");
+      return;
+    }
+
+    setFile(selectedFile);
   };
 
   return (
@@ -41,12 +75,13 @@ export default function UploadPage() {
                 type="file"
                 accept=".pdf,.docx,.txt"
                 className="sr-only"
-                onChange={(event) => {
-                  setFile(event.target.files?.[0] || null);
-                  setStatus("idle");
-                }}
+                onChange={(event) => handleFileChange(event.target.files?.[0] || null)}
               />
             </label>
+
+            {status === "error" && (
+              <StateMessage title="File cannot be processed" description={feedback} icon={AlertTriangle} />
+            )}
 
             {file && (
               <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -84,6 +119,10 @@ export default function UploadPage() {
               ))}
             </div>
           </div>
+
+          {!file && status === "idle" && (
+            <StateMessage title="No file selected" description="Choose a study file to preview the document processing flow." icon={FileText} />
+          )}
 
           {status === "done" && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10">

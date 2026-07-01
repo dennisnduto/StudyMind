@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StateMessage from "@/components/StateMessage";
 import StatCard from "@/components/StatCard";
 import {
   ArrowRight,
@@ -81,23 +82,34 @@ export default function DashboardPage() {
             <Link href="/upload" className="text-sm font-bold text-blue-700 dark:text-blue-300">Add new</Link>
           </div>
           <div className="divide-y divide-slate-200 dark:divide-slate-800">
-            {demoDocuments.map((doc) => (
-              <div key={doc.id} className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
-                <div className="flex gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                    <FileText className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-bold text-slate-950 dark:text-white">{doc.title}</h3>
-                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-500 dark:text-slate-400">{doc.summary}</p>
+            {demoDocuments.length > 0 ? (
+              demoDocuments.map((doc) => (
+                <div key={doc.id} className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="flex gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                      <FileText className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="font-bold text-slate-950 dark:text-white">{doc.title}</h3>
+                      <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-500 dark:text-slate-400">{doc.summary}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link href={`/chat?docId=${doc.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800">Chat</Link>
+                    <Link href={`/quiz?docId=${doc.id}`} className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">Quiz</Link>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Link href={`/chat?docId=${doc.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800">Chat</Link>
-                  <Link href={`/quiz?docId=${doc.id}`} className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">Quiz</Link>
-                </div>
+              ))
+            ) : (
+              <div className="p-5">
+                <StateMessage
+                  title="No study materials yet"
+                  description="Upload your first document to unlock summaries, chat context, quizzes, and progress tracking."
+                  icon={FileText}
+                  action={<Link href="/upload" className="inline-flex rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white">Upload material</Link>}
+                />
               </div>
-            ))}
+            )}
           </div>
         </div>
 

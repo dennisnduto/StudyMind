@@ -1,8 +1,10 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
+import StateMessage from "@/components/StateMessage";
 import { demoDocuments } from "@/lib/demo-data";
-import { Bot, FileText, Send, User } from "lucide-react";
+import { Bot, FileText, Loader2, Send, UploadCloud, User } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 
@@ -14,7 +16,7 @@ type Message = {
 export default function ChatPage() {
   return (
     <AppShell>
-      <Suspense fallback={<div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-[#15171b] dark:text-slate-400">Loading chat...</div>}>
+      <Suspense fallback={<StateMessage title="Loading chat" description="Preparing document context and conversation state." icon={Loader2} iconClassName="animate-spin" />}>
         <ChatContent />
       </Suspense>
     </AppShell>
@@ -23,7 +25,7 @@ export default function ChatPage() {
 
 function ChatContent() {
   const searchParams = useSearchParams();
-  const initialDocId = searchParams.get("docId") || demoDocuments[0].id;
+  const initialDocId = searchParams.get("docId") || demoDocuments[0]?.id || "";
   const [selectedDocId, setSelectedDocId] = useState(initialDocId);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -34,6 +36,17 @@ function ChatContent() {
   ]);
 
   const selectedDoc = useMemo(() => demoDocuments.find((doc) => doc.id === selectedDocId) || demoDocuments[0], [selectedDocId]);
+
+  if (demoDocuments.length === 0) {
+    return (
+      <StateMessage
+        title="No materials available"
+        description="Upload a document before starting a grounded study chat."
+        icon={UploadCloud}
+        action={<Link href="/upload" className="inline-flex rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white">Upload material</Link>}
+      />
+    );
+  }
 
   const sendMessage = (event: React.FormEvent) => {
     event.preventDefault();
@@ -87,7 +100,7 @@ function ChatContent() {
           </div>
 
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
-            {messages.map((message, index) => {
+            {messages.length > 0 ? messages.map((message, index) => {
               const isUser = message.role === "user";
               return (
                 <div key={`${message.role}-${index}`} className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -110,7 +123,9 @@ function ChatContent() {
                   )}
                 </div>
               );
-            })}
+            }) : (
+              <StateMessage title="No messages yet" description="Choose a material and send a question to begin the session." icon={Bot} />
+            )}
           </div>
 
           <form onSubmit={sendMessage} className="flex gap-3 border-t border-slate-200 p-4 dark:border-slate-800">

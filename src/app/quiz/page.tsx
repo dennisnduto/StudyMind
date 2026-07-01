@@ -1,15 +1,16 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
+import StateMessage from "@/components/StateMessage";
 import { demoDocuments, demoQuestions } from "@/lib/demo-data";
-import { CheckCircle2, RotateCcw, Sparkles, XCircle } from "lucide-react";
+import { CheckCircle2, FileQuestion, Loader2, RotateCcw, Sparkles, XCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 export default function QuizPage() {
   return (
     <AppShell>
-      <Suspense fallback={<div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-[#15171b] dark:text-slate-400">Loading quiz...</div>}>
+      <Suspense fallback={<StateMessage title="Loading quiz" description="Preparing your selected material and practice questions." icon={Loader2} iconClassName="animate-spin" />}>
         <QuizContent />
       </Suspense>
     </AppShell>
@@ -18,11 +19,21 @@ export default function QuizPage() {
 
 function QuizContent() {
   const searchParams = useSearchParams();
-  const [selectedDocId, setSelectedDocId] = useState(searchParams.get("docId") || demoDocuments[0].id);
+  const [selectedDocId, setSelectedDocId] = useState(searchParams.get("docId") || demoDocuments[0]?.id || "");
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState("");
+
+  if (demoQuestions.length === 0) {
+    return (
+      <StateMessage
+        title="No quiz questions ready"
+        description="Generate a practice set from uploaded material before starting a quiz session."
+        icon={FileQuestion}
+      />
+    );
+  }
 
   const current = demoQuestions[currentIndex];
   const isFinished = started && answers.length === demoQuestions.length;
