@@ -1,124 +1,28 @@
 # StudyMind AI
 
-**StudyMind AI** is an AI-powered study assistant designed to help students learn more efficiently by transforming study materials into interactive learning experiences. Users can upload notes and documents, receive AI-generated summaries, chat with their study materials, generate quizzes, and track their learning progress—all within a modern, responsive web application.
-
-The goal of StudyMind AI is to combine the capabilities of AI assistants, note-taking platforms, and learning tools into a single intelligent study companion.
-
----
+StudyMind AI is a Next.js study workspace that turns notes into summaries, chat context, quizzes, and progress insights. The current branch ships a polished demo experience with realistic data while keeping the Prisma and Auth.js structure ready for a real backend.
 
 ## Features
 
-*  Upload study materials (PDF, DOCX, TXT)
-*  AI-powered document summarization
-*  Chat with uploaded documents using AI
-*  Automatic quiz generation from notes
-*  Personalized study recommendations
-*  Study progress tracking and analytics
-*  Secure user authentication
-*  Responsive interface with dark/light mode support
+- Upload-flow preview for PDF, DOCX, and TXT study materials
+- Document summary cards shaped like backend records
+- Context-aware chat UI with document switching
+- Interactive quiz flow with scoring and explanations
+- Analytics dashboard with recommendations
+- Auth.js credential screens and Prisma user models
+- Responsive app shell with dark and light mode
 
----
+## Tech Stack
 
-##  Tech Stack
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Prisma 6
+- Auth.js / NextAuth
+- PostgreSQL-ready schema
 
-### Frontend
-
-* Next.js
-* TypeScript
-* Tailwind CSS
-
-### Backend
-
-* Next.js API Routes
-* Node.js
-
-### Database
-
-* PostgreSQL (via Prisma ORM)
-* *(Firebase can also be used as an alternative backend service.)*
-
-### AI
-
-* OpenAI API
-* LangChain (planned for advanced document retrieval)
-
-### Authentication
-
-* Auth.js (NextAuth)
-* JWT
-
-### File Processing
-
-* PDF parsing
-* Document text extraction
-* Cloud storage integration
-
----
-
-##  How It Works
-
-1. Users create an account and sign in.
-2. Upload study materials such as PDFs, DOCX, or text files.
-3. The application extracts the document content.
-4. AI analyzes the content to generate concise summaries.
-5. Users can ask questions about their uploaded documents.
-6. AI generates quizzes and flashcards for revision.
-7. The dashboard tracks learning progress and performance over time.
-
----
-
-##  Planned Modules
-
-* Authentication
-* Dashboard
-* Document Upload
-* AI Summarization
-* AI Chat
-* Quiz Generator
-* Study Analytics
-* User Settings
-* Notifications
-* Smart Study Planner
-
----
-
-##  Why StudyMind AI?
-
-StudyMind AI demonstrates practical experience with modern software engineering concepts, including:
-
-* Artificial Intelligence integration
-* Retrieval-Augmented Generation (RAG) concepts
-* File processing and document parsing
-* Secure authentication and authorization
-* RESTful API development
-* Full-stack application architecture
-* Database design and management
-* Responsive UI/UX development
-* Cloud-ready deployment
-
----
-
-##  Future Improvements
-
-*  Voice-based AI assistant
-*  Progressive Web App (PWA)
-*  Study reminders and notifications
-*  Flashcard generation
-*  Collaborative study groups
-*  Multi-language support
-*  AI-generated study schedules
-*  Smarter learning recommendations
-
----
-
-##  Getting Started
-
-Clone the repository:
-
-```bash
-git clone https://github.com/dennisnduto/StudyMind.git
-
-```
+## Getting Started
 
 Install dependencies:
 
@@ -126,46 +30,79 @@ Install dependencies:
 npm install
 ```
 
-Configure your environment variables by creating a `.env.local` file with the required API keys and database credentials.
+Create a local environment file:
 
-Start the development server:
+```bash
+cp .env.example .env.local
+```
+
+Generate Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+Start the dev server:
 
 ```bash
 npm run dev
 ```
 
-Open your browser and visit:
+Open the app:
 
+```text
+http://127.0.0.1:3000
 ```
-http://localhost:3000
+
+## Environment
+
+The app expects these values when backend auth and database flows are enabled:
+
+- `DATABASE_URL`: PostgreSQL connection string for Prisma.
+- `NEXTAUTH_SECRET`: secret used by Auth.js session signing.
+- `NEXTAUTH_URL`: canonical local or deployed app URL.
+
+For the frontend demo, you can still browse the dashboard, upload, chat, quiz, analytics, and settings pages without a connected database.
+
+## Prisma
+
+Generate the client after installing dependencies or changing the schema:
+
+```bash
+npx prisma generate
 ```
 
----
+Seed demo records once a database is connected:
 
-##  Project Status
+```bash
+npm run seed
+```
 
- **Currently under active development.**
+The seed script creates a demo user and sample study records that match the UI content.
 
-This project is being built incrementally with a focus on clean architecture, scalable code, and production-ready features.
+## Quality Checks
 
----
+Run linting:
 
-##  Contributing
+```bash
+npm run lint
+```
 
-Contributions, suggestions, and feature requests are welcome. Feel free to fork the repository, open an issue, or submit a pull request.
+Run a production build:
 
----
+```bash
+npm run build
+```
 
-##  License
+## Demo Account
 
-This project is licensed under the MIT License.
+The seeded demo account uses:
 
----
+```text
+Email: student@studymind.ai
+Password: studymind-demo
+```
 
-### Author
+## Project Status
 
-**Dennis Nduto**
-
-Software Developer | Full-Stack Developer | AI Enthusiast
-
-Building intelligent web applications that combine modern software engineering with artificial intelligence to improve learning experiences.
+StudyMind AI is in active development. The frontend is ready for API, storage, AI retrieval, and production auth wiring.
