@@ -13,12 +13,33 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
   const [feedback, setFeedback] = useState("");
+  const [docId, setDocId] = useState("");
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!file) return;
     setStatus("processing");
-    window.setTimeout(() => setStatus("done"), 900);
+    setFeedback("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatus("done");
+        setDocId(data.documentId);
+      } else {
+        setStatus("error");
+        setFeedback(data.error || "Parsing or summary generation failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("error");
+      setFeedback("Network error uploading document.");
+    }
   };
 
   const handleFileChange = (selectedFile: File | null) => {
@@ -132,7 +153,7 @@ export default function UploadPage() {
               </p>
               <div className="mt-4 flex gap-2">
                 <Link href="/dashboard" className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white">Dashboard</Link>
-                <Link href="/chat" className="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-bold text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200">Chat</Link>
+                <Link href={docId ? `/chat?docId=${docId}` : "/chat"} className="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-bold text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200">Chat</Link>
               </div>
             </div>
           )}

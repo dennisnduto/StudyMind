@@ -1,22 +1,152 @@
 import { NextResponse } from "next/server";
-import { demoQuestions } from "@/lib/demo-data";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { generateQuiz } from "@/lib/ai";
 
-export async function POST() {
-  return NextResponse.json({
-    success: true,
-    quizId: "demo-quiz",
-    title: "Demo StudyMind Quiz",
-    questions: demoQuestions,
-  });
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const { documentId } = body;
+
+    if (!documentId) {
+      return NextResponse.json({ error: "documentId is required" }, { status: 400 });
+    }
+
+    // Check if quiz already exists for this document
+    let quiz = await prisma.quiz.findFirst({
+      where: {
+        userId: user.id,
+        documentId: documentId,
+      },
+    });
+
+    if (!quiz) {
+      // Find document
+      const document = await prisma.document.findUnique({
+        where: { id: documentId },
+      });
+      if (!document) {
+        return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      }
+
+      // Generate quiz using AI
+      const generated = await generateQuiz(document.title, document.content);
+
+      // Save quiz to DB
+      quiz = await prisma.quiz.create({
+        data: {
+          userId: user.id,
+          documentId: documentId,
+          title: generated.title || `${document.title.split(".")[0]} Quiz`,
+          questions: generated.questions,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      quizId: quiz.id,
+      title: quiz.title,
+      questions: quiz.questions,
+    });
+  } catch (error: any) {
+    console.error("Quiz POST API error:", error);
+    return NextResponse.json(
+      { success: false, error: error?.message || "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(req: Request) {
-  const body = await req.json();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  return NextResponse.json({
-    success: true,
-    quizResultId: "demo-quiz-result",
-    score: body.score,
-    total: body.total,
-  });
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const { quizId, score, total, answers } = body;
+
+    if (!quizId || score === undefined || !total) {
+      return NextResponse.json(
+        { error: "quizId, score, and total are required" },
+        { status: 400 }
+      );
+    }
+
+    // Save quiz result
+    const quizResult = await prisma.quizResult.create({
+      data: {
+        quizId,
+        score,
+        total,
+        answers: answers || {},
+      },
+    });
+
+    // Update study frequency/lastStudied
+    await prisma.studyStats.upsert({
+      where: { userId: user.id },
+      update: { lastStudiedAt: new Date() },
+      create: { userId: user.id, lastStudiedAt: new Date() },
+    });
+
+    // Calculate user averages
+    const allQuizResults = await prisma.quizResult.findMany({
+      where: {
+        quiz: {
+          userId: user.id,
+        },
+      },
+    });
+
+    const totalQuizzes = allQuizResults.length;
+    const averageScore =
+      allQuizResults.reduce((acc, r) => acc + (r.score / r.total) * 100, 0) / totalQuizzes;
+
+    // Update stats
+    await prisma.studyStats.update({
+      where: { userId: user.id },
+      data: {
+        totalQuizzes,
+        averageScore: Math.round(averageScore * 10) / 10,
+        // Calculate unique days studied (this is just an approximation based on when quizzes/docs are modified, or we can increment)
+        studyFrequency: { increment: 1 },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      quizResultId: quizResult.id,
+      score: quizResult.score,
+      total: quizResult.total,
+    });
+  } catch (error: any) {
+    console.error("Quiz PATCH API error:", error);
+    return NextResponse.json(
+      { success: false, error: error?.message || "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
