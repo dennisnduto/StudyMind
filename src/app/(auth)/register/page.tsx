@@ -5,13 +5,33 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    setError("");
+
+    const nextErrors = {
+      name: name.trim().length >= 2 ? "" : "Enter your full name.",
+      email: emailPattern.test(email.trim()) ? "" : "Enter a valid email address.",
+      password: password.length >= 8 ? "" : "Use at least 8 characters.",
+    };
+
+    if (nextErrors.name || nextErrors.email || nextErrors.password) {
+      setFieldErrors(nextErrors);
+      return;
+    }
+
+    setFieldErrors({});
     setIsLoading(true);
     window.setTimeout(() => {
       setIsLoading(false);
@@ -34,17 +54,22 @@ export default function RegisterPage() {
         </div>
         {error && <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">{error}</div>}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {[
-            { label: "Full name", type: "text", placeholder: "Alex Johnson" },
-            { label: "Email", type: "email", placeholder: "alex@example.com" },
-            { label: "Password", type: "password", placeholder: "Create password" },
-          ].map((field) => (
-            <label key={field.label} className="block text-sm font-bold">
-              {field.label}
-              <input className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 font-normal dark:border-slate-800 dark:bg-slate-900" type={field.type} placeholder={field.placeholder} required />
-            </label>
-          ))}
-          <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700" type="submit">
+          <label className="block text-sm font-bold">
+            Full name
+            <input className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 font-normal dark:border-slate-800 dark:bg-slate-900" type="text" placeholder="Alex Johnson" value={name} onChange={(event) => setName(event.target.value)} aria-invalid={Boolean(fieldErrors.name)} required />
+            {fieldErrors.name && <span className="mt-1 block text-xs font-semibold text-red-600 dark:text-red-300">{fieldErrors.name}</span>}
+          </label>
+          <label className="block text-sm font-bold">
+            Email
+            <input className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 font-normal dark:border-slate-800 dark:bg-slate-900" type="email" placeholder="alex@example.com" value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={Boolean(fieldErrors.email)} required />
+            {fieldErrors.email && <span className="mt-1 block text-xs font-semibold text-red-600 dark:text-red-300">{fieldErrors.email}</span>}
+          </label>
+          <label className="block text-sm font-bold">
+            Password
+            <input className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 font-normal dark:border-slate-800 dark:bg-slate-900" type="password" placeholder="Create password" value={password} onChange={(event) => setPassword(event.target.value)} aria-invalid={Boolean(fieldErrors.password)} minLength={8} required />
+            {fieldErrors.password && <span className="mt-1 block text-xs font-semibold text-red-600 dark:text-red-300">{fieldErrors.password}</span>}
+          </label>
+          <button disabled={isLoading} className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" type="submit">
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             Create account
           </button>
