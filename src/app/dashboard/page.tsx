@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StatCard from "@/components/StatCard";
 import {
   ArrowRight,
   BarChart3,
@@ -65,20 +66,9 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div key={card.label} className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15171b]">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{card.label}</span>
-                <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${card.tone}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-              </div>
-              <p className="mt-4 text-3xl font-bold">{card.value}</p>
-            </div>
-          );
-        })}
+        {cards.map((card) => (
+          <StatCard key={card.label} label={card.label} value={card.value} icon={card.icon} tone={card.tone} />
+        ))}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.35fr_0.75fr]">
