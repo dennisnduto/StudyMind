@@ -1,6 +1,7 @@
 "use client";
 
 import { BrainCircuit, Loader2 } from "lucide-react";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -33,10 +34,32 @@ export default function RegisterPage() {
 
     setFieldErrors({});
     setIsLoading(true);
-    window.setTimeout(() => {
-      setIsLoading(false);
-      setError("Registration UI is ready. The backend owner can connect this form to Auth.js and Prisma.");
-    }, 500);
+    fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Registration failed.");
+          setIsLoading(false);
+        } else {
+          // Auto sign-in
+          const result = await signIn("credentials", { email, password, redirect: false });
+          setIsLoading(false);
+          if (result?.error) {
+            router.push("/login?registered=true");
+          } else {
+            router.push("/dashboard");
+          }
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Network error occurred.");
+        setIsLoading(false);
+      });
   };
 
   return (
@@ -74,9 +97,11 @@ export default function RegisterPage() {
             Create account
           </button>
         </form>
-        <button onClick={() => router.push("/dashboard")} className="mt-3 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold dark:border-slate-800" type="button">
-          Continue to demo workspace
-        </button>
+        <div className="mt-3 text-center">
+          <Link href="/dashboard" className="text-sm font-semibold text-blue-600 hover:underline dark:text-blue-400">
+            Go to Dashboard
+          </Link>
+        </div>
         <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
           Already have an account? <Link className="font-bold text-blue-700 dark:text-blue-300" href="/login">Sign in</Link>
         </p>

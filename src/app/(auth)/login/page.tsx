@@ -35,7 +35,7 @@ export default function LoginPage() {
     const result = await signIn("credentials", { email, password, redirect: false });
     setIsLoading(false);
     if (result?.error) {
-      setError("Backend authentication is not connected yet. Use the demo workspace from the home page.");
+      setError("Invalid email or password. Please verify your credentials.");
       return;
     }
     router.push("/dashboard");

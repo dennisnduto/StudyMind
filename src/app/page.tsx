@@ -23,11 +23,11 @@ export default function Home() {
           <p className="text-sm font-bold text-blue-700 dark:text-blue-300">AI-powered study assistant</p>
           <h1 className="mt-3 max-w-3xl text-5xl font-bold leading-tight sm:text-6xl">StudyMind AI turns notes into summaries, chats, quizzes, and progress insights.</h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-400">
-            A modern frontend for students who need one place to upload material, understand it faster, practice actively, and track what to study next.
+            Your all-in-one platform to upload study materials, understand them faster, practice actively, and track your progress to ace your exams.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700">
-              Open demo workspace
+              Get Started
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/login" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-white dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900">

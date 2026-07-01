@@ -131,7 +131,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">{session?.user?.name || "Student"}</p>
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{session?.user?.email || "Frontend demo"}</p>
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{session?.user?.email || "student@studymind.ai"}</p>
                 </div>
               </div>
               <button
