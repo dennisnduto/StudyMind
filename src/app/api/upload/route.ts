@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { parseFile } from "@/lib/parser";
 import { generateSummary } from "@/lib/ai";
+import { getUserEntitlement, premiumRequiredPayload } from "@/lib/subscription";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -19,6 +20,11 @@ export async function POST(req: Request) {
     });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const entitlement = await getUserEntitlement(user.id);
+    if (!entitlement?.canUseAi) {
+      return NextResponse.json(premiumRequiredPayload(entitlement!), { status: 402 });
     }
 
     const formData = await req.formData();
@@ -81,10 +87,11 @@ export async function POST(req: Request) {
       title: document.title,
       summary: document.summary,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Upload API error:", error);
+    const message = error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json(
-      { success: false, error: error?.message || "Internal Server Error" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

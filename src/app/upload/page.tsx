@@ -11,7 +11,7 @@ const maxFileSize = 25 * 1024 * 1024;
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "processing" | "done" | "error" | "premium">("idle");
   const [feedback, setFeedback] = useState("");
   const [docId, setDocId] = useState("");
 
@@ -31,6 +31,9 @@ export default function UploadPage() {
       if (res.ok && data.success) {
         setStatus("done");
         setDocId(data.documentId);
+      } else if (data.code === "PREMIUM_REQUIRED") {
+        setStatus("premium");
+        setFeedback(data.error || "Upgrade to Premium to continue using AI document analysis.");
       } else {
         setStatus("error");
         setFeedback(data.error || "Parsing or summary generation failed.");
@@ -79,7 +82,7 @@ export default function UploadPage() {
             <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Document upload</p>
             <h1 className="mt-2 text-3xl font-bold">Turn study material into learning assets.</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-              Frontend flow supports PDF, DOCX, and TXT. The backend can connect this form to parsing, storage, summarization, and retrieval indexing.
+              Upload PDF, DOCX, and TXT notes to extract text, generate summaries, and prepare chat and quiz context.
             </p>
           </div>
 
@@ -102,6 +105,15 @@ export default function UploadPage() {
 
             {status === "error" && (
               <StateMessage title="File cannot be processed" description={feedback} icon={AlertTriangle} />
+            )}
+
+            {status === "premium" && (
+              <StateMessage
+                title="Premium required"
+                description={feedback}
+                icon={AlertTriangle}
+                action={<Link href="/premium" className="inline-flex rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white">View Premium</Link>}
+              />
             )}
 
             {file && (
@@ -142,14 +154,14 @@ export default function UploadPage() {
           </div>
 
           {!file && status === "idle" && (
-            <StateMessage title="No file selected" description="Choose a study file to preview the document processing flow." icon={FileText} />
+            <StateMessage title="No file selected" description="Choose a study file to begin document processing." icon={FileText} />
           )}
 
           {status === "done" && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-              <h2 className="font-bold text-emerald-800 dark:text-emerald-200">Frontend preview complete</h2>
+              <h2 className="font-bold text-emerald-800 dark:text-emerald-200">Document analyzed</h2>
               <p className="mt-2 text-sm leading-6 text-emerald-700 dark:text-emerald-300">
-                The backend can now return a real document id, summary, and extracted text using this same interaction.
+                Your document is saved with extracted text and a generated summary.
               </p>
               <div className="mt-4 flex gap-2">
                 <Link href="/dashboard" className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white">Dashboard</Link>
