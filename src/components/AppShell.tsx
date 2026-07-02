@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bell,
   BrainCircuit,
+  CreditCard,
   FileQuestion,
   LayoutDashboard,
   LogOut,
@@ -14,6 +15,7 @@ import {
   Moon,
   Search,
   Settings,
+  ShieldCheck,
   Sun,
   UploadCloud,
 } from "lucide-react";
@@ -25,12 +27,15 @@ const navigation = [
   { name: "Chat", href: "/chat", icon: MessageSquareText },
   { name: "Quiz", href: "/quiz", icon: FileQuestion },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Premium", href: "/premium", icon: CreditCard },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const sessionUser = session?.user as { name?: string | null; email?: string | null; plan?: string | null; role?: string | null } | undefined;
+  const navItems = sessionUser?.role === "ADMIN" ? [...navigation, { name: "Admin", href: "/admin", icon: ShieldCheck }] : navigation;
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -66,7 +71,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="mt-8 space-y-1">
-          {navigation.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
@@ -88,11 +93,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
         <div className="mt-auto rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70">
           <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Current plan</p>
-          <p className="mt-1 text-sm font-bold">Exam sprint mode</p>
+          <p className="mt-1 text-sm font-bold">{sessionUser?.plan === "PREMIUM" ? "Premium" : "Free access"}</p>
           <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
-            <div className="h-2 w-[72%] rounded-full bg-[#10b981]" />
+            <div className={`h-2 rounded-full ${sessionUser?.plan === "PREMIUM" ? "w-full bg-[#10b981]" : "w-[45%] bg-blue-600"}`} />
           </div>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">72% weekly target complete</p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{sessionUser?.plan === "PREMIUM" ? "Unlimited AI tools active" : "Upgrade when the free quota ends"}</p>
         </div>
       </aside>
 
@@ -127,11 +132,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </button>
               <div className="hidden items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:flex">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                  {(session?.user?.name || "S").slice(0, 1)}
+                  {(sessionUser?.name || "S").slice(0, 1)}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{session?.user?.name || "Student"}</p>
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{session?.user?.email || "student@studymind.ai"}</p>
+                  <p className="truncate text-sm font-bold">{sessionUser?.name || "Student"}</p>
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{sessionUser?.email || "student@studymind.ai"}</p>
                 </div>
               </div>
               <button
@@ -149,8 +154,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <main className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 sm:px-6 lg:px-8">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b] lg:hidden">
-        {navigation.map((item) => {
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b] lg:hidden" style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}>
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
