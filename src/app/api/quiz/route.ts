@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { generateQuiz } from "@/lib/ai";
+import { getUserEntitlement, premiumRequiredPayload } from "@/lib/subscription";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +17,11 @@ export async function POST(req: Request) {
     });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const entitlement = await getUserEntitlement(user.id);
+    if (!entitlement?.canUseAi) {
+      return NextResponse.json(premiumRequiredPayload(entitlement!), { status: 402 });
     }
 
     const body = await req.json();
@@ -35,8 +41,11 @@ export async function POST(req: Request) {
 
     if (!quiz) {
       // Find document
-      const document = await prisma.document.findUnique({
-        where: { id: documentId },
+      const document = await prisma.document.findFirst({
+        where: {
+          id: documentId,
+          userId: user.id,
+        },
       });
       if (!document) {
         return NextResponse.json({ error: "Document not found" }, { status: 404 });
@@ -62,10 +71,11 @@ export async function POST(req: Request) {
       title: quiz.title,
       questions: quiz.questions,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Quiz POST API error:", error);
+    const message = error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json(
-      { success: false, error: error?.message || "Internal Server Error" },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -93,6 +103,17 @@ export async function PATCH(req: Request) {
         { error: "quizId, score, and total are required" },
         { status: 400 }
       );
+    }
+
+    const quiz = await prisma.quiz.findFirst({
+      where: {
+        id: quizId,
+        userId: user.id,
+      },
+    });
+
+    if (!quiz) {
+      return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
     // Save quiz result
@@ -142,10 +163,11 @@ export async function PATCH(req: Request) {
       score: quizResult.score,
       total: quizResult.total,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Quiz PATCH API error:", error);
+    const message = error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json(
-      { success: false, error: error?.message || "Internal Server Error" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

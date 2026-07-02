@@ -14,6 +14,16 @@ type Question = {
   explanation: string;
 };
 
+type StudyDocument = {
+  id: string;
+  title: string;
+};
+
+type DocumentsResponse = {
+  success?: boolean;
+  documents?: StudyDocument[];
+};
+
 export default function QuizPage() {
   return (
     <AppShell>
@@ -28,7 +38,7 @@ function QuizContent() {
   const searchParams = useSearchParams();
   const docIdParam = searchParams.get("docId") || "";
 
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<StudyDocument[]>([]);
   const [selectedDocId, setSelectedDocId] = useState(docIdParam);
   const [quizId, setQuizId] = useState("");
   const [quizTitle, setQuizTitle] = useState("");
@@ -40,29 +50,36 @@ function QuizContent() {
   const [isLoadingDocs, setIsLoadingDocs] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [generationError, setGenerationError] = useState("");
+  const [requiresPremium, setRequiresPremium] = useState(false);
 
   // Fetch documents list
   useEffect(() => {
-    fetch("/api/documents")
-      .then((res) => res.json())
-      .then((data) => {
+    async function loadDocuments() {
+      try {
+        const res = await fetch("/api/documents");
+        const data = (await res.json()) as DocumentsResponse;
         if (data.success && data.documents) {
           setDocuments(data.documents);
-          if (!selectedDocId && data.documents.length > 0) {
+          if (!docIdParam && data.documents.length > 0) {
             setSelectedDocId(data.documents[0].id);
           }
         }
-        setIsLoadingDocs(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
+      } finally {
         setIsLoadingDocs(false);
-      });
-  }, []);
+      }
+    }
+
+    void loadDocuments();
+  }, [docIdParam]);
 
   const handleStartQuiz = async () => {
     if (!selectedDocId) return;
     setIsGenerating(true);
+    setGenerationError("");
+    setRequiresPremium(false);
     try {
       const res = await fetch("/api/quiz", {
         method: "POST",
@@ -79,11 +96,12 @@ function QuizContent() {
         setAnswers([]);
         setSelectedAnswer("");
       } else {
-        alert(data.error || "Failed to generate quiz.");
+        setRequiresPremium(data.code === "PREMIUM_REQUIRED");
+        setGenerationError(data.error || "Failed to generate quiz.");
       }
     } catch (err) {
       console.error(err);
-      alert("Error generating quiz.");
+      setGenerationError("Error generating quiz.");
     } finally {
       setIsGenerating(false);
     }
@@ -181,6 +199,17 @@ function QuizContent() {
 
       {!started && (
         <section className="rounded-lg border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-[#15171b]">
+          {generationError && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-left dark:border-amber-500/30 dark:bg-amber-500/10">
+              <p className="font-bold text-amber-900 dark:text-amber-200">{requiresPremium ? "Premium required" : "Quiz generation failed"}</p>
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">{generationError}</p>
+              {requiresPremium && (
+                <Link href="/premium" className="mt-3 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
+                  View Premium
+                </Link>
+              )}
+            </div>
+          )}
           {isGenerating ? (
             <>
               <Loader2 className="mx-auto h-12 w-12 text-blue-600 animate-spin" />
@@ -239,7 +268,7 @@ function QuizContent() {
         <section className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-[#15171b]">
           <div className="text-center">
             <h2 className="text-3xl font-bold">Quiz complete</h2>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">You scored {score} of {questions.length}.</p>
+            <p className="mt-2 text-slate-500 dark:text-slate-400">{quizTitle || "Practice set"}: you scored {score} of {questions.length}.</p>
           </div>
           <div className="mt-6 space-y-3">
             {questions.map((question, index) => {
