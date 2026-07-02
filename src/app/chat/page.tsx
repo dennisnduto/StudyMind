@@ -12,6 +12,22 @@ type Message = {
   content: string;
 };
 
+type StudyDocument = {
+  id: string;
+  title: string;
+  fileType: string;
+};
+
+type DocumentsResponse = {
+  success?: boolean;
+  documents?: StudyDocument[];
+};
+
+type ChatResponse = {
+  success?: boolean;
+  messages?: Message[];
+};
+
 export default function ChatPage() {
   return (
     <AppShell>
@@ -26,7 +42,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const docIdParam = searchParams.get("docId") || "";
 
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<StudyDocument[]>([]);
   const [selectedDocId, setSelectedDocId] = useState(docIdParam);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,31 +52,35 @@ function ChatContent() {
 
   // Fetch documents list on mount
   useEffect(() => {
-    fetch("/api/documents")
-      .then((res) => res.json())
-      .then((data) => {
+    async function loadDocuments() {
+      try {
+        const res = await fetch("/api/documents");
+        const data = (await res.json()) as DocumentsResponse;
         if (data.success && data.documents) {
           setDocuments(data.documents);
-          if (!selectedDocId && data.documents.length > 0) {
+          if (!docIdParam && data.documents.length > 0) {
             setSelectedDocId(data.documents[0].id);
           }
         }
-        setIsLoadingDocs(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
+      } finally {
         setIsLoadingDocs(false);
-      });
-  }, []);
+      }
+    }
+
+    void loadDocuments();
+  }, [docIdParam]);
 
   // Fetch message history when selected document changes
   useEffect(() => {
     if (!selectedDocId) return;
 
-    setIsLoadingMessages(true);
-    fetch(`/api/chat?docId=${selectedDocId}`)
-      .then((res) => res.json())
-      .then((data) => {
+    async function loadMessages() {
+      setIsLoadingMessages(true);
+      try {
+        const res = await fetch(`/api/chat?docId=${selectedDocId}`);
+        const data = (await res.json()) as ChatResponse;
         if (data.success) {
           if (data.messages && data.messages.length > 0) {
             setMessages(data.messages);
@@ -73,12 +93,14 @@ function ChatContent() {
             ]);
           }
         }
-        setIsLoadingMessages(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
+      } finally {
         setIsLoadingMessages(false);
-      });
+      }
+    }
+
+    void loadMessages();
   }, [selectedDocId]);
 
   const selectedDoc = useMemo(() => {
@@ -106,6 +128,11 @@ function ChatContent() {
       const data = await res.json();
       if (res.ok && data.success && data.message) {
         setMessages((current) => [...current, data.message]);
+      } else if (data.code === "PREMIUM_REQUIRED") {
+        setMessages((current) => [
+          ...current,
+          { role: "assistant", content: `${data.error} Open the Premium page to continue: /premium` },
+        ]);
       } else {
         setMessages((current) => [
           ...current,
@@ -177,7 +204,7 @@ function ChatContent() {
       <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
         <div className="border-b border-slate-200 p-5 dark:border-slate-800">
           <h2 className="font-bold">{selectedDoc?.title || "Select a document"}</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Grounded answer preview using your document context.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Grounded answers using your document context.</p>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
