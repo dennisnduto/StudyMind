@@ -26,8 +26,9 @@ export async function parseFile(buffer: Buffer, fileType: string): Promise<strin
     }
 
     throw new Error(`Unsupported file type: ${fileType}`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error parsing ${fileType} file:`, error);
-    throw new Error(`Failed to parse ${fileType} file: ${error?.message || error}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse ${fileType} file: ${message}`);
   }
 }

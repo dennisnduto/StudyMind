@@ -26,7 +26,7 @@ export async function GET() {
       success: true,
       documents,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Documents GET error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

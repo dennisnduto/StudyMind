@@ -4,6 +4,41 @@
  */
 
 // Helper to call Gemini API
+type QuizQuestion = {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+};
+
+type GeneratedQuiz = {
+  title: string;
+  questions: QuizQuestion[];
+};
+
+function isGeneratedQuiz(value: unknown): value is GeneratedQuiz {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as { title?: unknown; questions?: unknown };
+  return (
+    typeof candidate.title === "string" &&
+    Array.isArray(candidate.questions) &&
+    candidate.questions.every((question) => {
+      const item = question as Partial<QuizQuestion>;
+      return (
+        typeof item.question === "string" &&
+        Array.isArray(item.options) &&
+        item.options.every((option) => typeof option === "string") &&
+        typeof item.correctAnswer === "string" &&
+        typeof item.explanation === "string"
+      );
+    })
+  );
+}
+
+// Helper to call Gemini API
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
@@ -80,12 +115,12 @@ function getLocalChatResponse(content: string, userMessage: string): string {
   return `I found no direct references to your question in the text. Here is a summary of the document to help guide you: ${getLocalSummary(content)}`;
 }
 
-function getLocalQuiz(documentTitle: string, content: string) {
+function getLocalQuiz(documentTitle: string, content: string): GeneratedQuiz {
   const clean = content.replace(/\s+/g, " ").trim();
   const sentences = clean.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
 
   // We want to generate 3 questions.
-  const questions: any[] = [];
+  const questions: QuizQuestion[] = [];
   const definitionSentences = sentences.filter(s => 
     s.includes(" is ") || s.includes(" are ") || s.includes(" depends ") || s.includes(" because ")
   );
@@ -196,7 +231,7 @@ Assistant:`;
 export async function generateQuiz(
   documentTitle: string,
   content: string
-): Promise<{ title: string; questions: { question: string; options: string[]; correctAnswer: string; explanation: string }[] }> {
+): Promise<GeneratedQuiz> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
@@ -231,8 +266,8 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
     try {
       const response = await callGemini(prompt, geminiKey);
       const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || [null, response];
-      const parsed = JSON.parse(jsonMatch[1].trim());
-      if (parsed && Array.isArray(parsed.questions)) return parsed;
+      const parsed: unknown = JSON.parse(jsonMatch[1].trim());
+      if (isGeneratedQuiz(parsed)) return parsed;
     } catch (e) {
       console.warn("Gemini Quiz failed, falling back to OpenAI/Local", e);
     }
@@ -242,8 +277,8 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
     try {
       const response = await callOpenAI(prompt, openaiKey);
       const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || [null, response];
-      const parsed = JSON.parse(jsonMatch[1].trim());
-      if (parsed && Array.isArray(parsed.questions)) return parsed;
+      const parsed: unknown = JSON.parse(jsonMatch[1].trim());
+      if (isGeneratedQuiz(parsed)) return parsed;
     } catch (e) {
       console.warn("OpenAI Quiz failed, falling back to Local", e);
     }
