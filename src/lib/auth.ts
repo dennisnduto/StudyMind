@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs";
 type SessionWithUserId = {
   user?: {
     id?: string;
+    role?: string;
+    plan?: string;
   };
 };
 
@@ -40,7 +42,9 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.image
+          image: user.image,
+          role: user.role,
+          plan: user.plan
         };
       }
     })
@@ -55,12 +59,16 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = (user as { role?: string }).role;
+        token.plan = (user as { plan?: string }).plan;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         (session as SessionWithUserId).user!.id = token.id as string;
+        (session as SessionWithUserId).user!.role = token.role as string;
+        (session as SessionWithUserId).user!.plan = token.plan as string;
       }
       return session;
     }
