@@ -24,6 +24,13 @@ type DocumentsResponse = {
   documents?: StudyDocument[];
 };
 
+const answerLabels = ["A", "B", "C", "D"] as const;
+
+function getAnswerValue(option: string, index: number) {
+  const match = option.trim().match(/^([A-D])[\).:\-\s]/i);
+  return match ? match[1].toUpperCase() : answerLabels[index] ?? String(index + 1);
+}
+
 export default function QuizPage() {
   return (
     <AppShell>
@@ -246,8 +253,8 @@ function QuizContent() {
           </div>
           <h2 className="mt-5 text-xl font-bold leading-8">{current.question}</h2>
           <div className="mt-5 space-y-3">
-            {current.options.map((option) => {
-              const value = option.charAt(0);
+            {current.options.map((option, index) => {
+              const value = getAnswerValue(option, index);
               return (
                 <button
                   key={option}
