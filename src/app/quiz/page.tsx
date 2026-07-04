@@ -51,6 +51,7 @@ function QuizContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generationError, setGenerationError] = useState("");
+  const [submissionError, setSubmissionError] = useState("");
   const [requiresPremium, setRequiresPremium] = useState(false);
 
   // Fetch documents list
@@ -79,6 +80,7 @@ function QuizContent() {
     if (!selectedDocId) return;
     setIsGenerating(true);
     setGenerationError("");
+    setSubmissionError("");
     setRequiresPremium(false);
     try {
       const res = await fetch("/api/quiz", {
@@ -117,8 +119,9 @@ function QuizContent() {
       // Quiz complete! Submit results to backend
       const score = nextAnswers.filter((ans, idx) => ans === questions[idx].correctAnswer).length;
       setIsSubmitting(true);
+      setSubmissionError("");
       try {
-        await fetch("/api/quiz", {
+        const res = await fetch("/api/quiz", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -128,8 +131,13 @@ function QuizContent() {
             answers: { selected: nextAnswers },
           }),
         });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Failed to save quiz score.");
+        }
       } catch (err) {
         console.error("Failed to submit score:", err);
+        setSubmissionError(err instanceof Error ? err.message : "Failed to save quiz score.");
       } finally {
         setIsSubmitting(false);
       }
@@ -145,6 +153,7 @@ function QuizContent() {
     setCurrentIndex(0);
     setAnswers([]);
     setSelectedAnswer("");
+    setSubmissionError("");
   };
 
   if (isLoadingDocs) {
@@ -270,6 +279,11 @@ function QuizContent() {
             <h2 className="text-3xl font-bold">Quiz complete</h2>
             <p className="mt-2 text-slate-500 dark:text-slate-400">{quizTitle || "Practice set"}: you scored {score} of {questions.length}.</p>
           </div>
+          {submissionError && (
+            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+              {submissionError}
+            </div>
+          )}
           <div className="mt-6 space-y-3">
             {questions.map((question, index) => {
               const isCorrect = answers[index] === question.correctAnswer;
