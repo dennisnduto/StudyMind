@@ -78,6 +78,18 @@ export default async function DashboardPage() {
     }))
     .reverse(); // Chronological for trending chart
 
+  const latestDocument = user.documents[0];
+  const latestQuizResult = quizResults.at(-1);
+  const studyPlanTasks = [
+    latestDocument ? `Review the summary for ${latestDocument.title}` : "Upload your first study material",
+    latestDocument ? `Ask two questions about ${latestDocument.title}` : "Build your first document workspace",
+    latestQuizResult
+      ? latestQuizResult.percentage < 70
+        ? `Retake ${latestQuizResult.quizTitle} after reviewing weak points`
+        : "Generate a new quiz from recent notes"
+      : "Generate your first practice quiz",
+  ];
+
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
@@ -108,12 +120,12 @@ export default async function DashboardPage() {
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
             </div>
             <div className="mt-5 space-y-4">
-              {["Review cell signaling summary", "Generate economics quiz", "Chat through integration mistakes"].map((task, index) => (
+              {studyPlanTasks.map((task, index) => (
                 <div key={task} className="flex items-center gap-3">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-xs font-bold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
                     {index + 1}
                   </span>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{task}</span>
+                  <span className="line-clamp-2 text-sm font-medium text-slate-700 dark:text-slate-300">{task}</span>
                 </div>
               ))}
             </div>
