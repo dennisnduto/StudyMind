@@ -53,7 +53,7 @@ export default async function AnalyticsPage() {
     quizTitle: r.quiz.title,
     score: r.score,
     total: r.total,
-    percentage: Math.round((r.score / r.total) * 100),
+    percentage: r.total > 0 ? Math.round((r.score / r.total) * 100) : 0,
     createdAt: r.createdAt.toISOString(),
   }));
 

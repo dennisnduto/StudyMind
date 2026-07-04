@@ -63,7 +63,7 @@ export async function GET() {
       quizTitle: result.quiz.title,
       score: result.score,
       total: result.total,
-      percentage: Math.round((result.score / result.total) * 100),
+      percentage: result.total > 0 ? Math.round((result.score / result.total) * 100) : 0,
       createdAt: result.createdAt,
     })),
   });

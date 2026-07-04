@@ -74,7 +74,7 @@ export default async function DashboardPage() {
       quizTitle: r.quiz.title,
       score: r.score,
       total: r.total,
-      percentage: Math.round((r.score / r.total) * 100),
+      percentage: r.total > 0 ? Math.round((r.score / r.total) * 100) : 0,
     }))
     .reverse(); // Chronological for trending chart
 

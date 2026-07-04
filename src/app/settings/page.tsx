@@ -32,21 +32,11 @@ function readPreferences() {
 }
 
 export default function SettingsPage() {
-  const [preferences, setPreferences] = useState(defaultPreferences);
-  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [preferences, setPreferences] = useState(readPreferences);
 
   useEffect(() => {
-    setPreferences(readPreferences());
-    setHasLoadedPreferences(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoadedPreferences) {
-      return;
-    }
-
     window.localStorage.setItem(preferencesStorageKey, JSON.stringify(preferences));
-  }, [hasLoadedPreferences, preferences]);
+  }, [preferences]);
 
   const togglePreference = (key: keyof typeof defaultPreferences) => {
     setPreferences((current) => ({
