@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BarChart3, BrainCircuit, FileQuestion, FileText, MessageSquareText, UploadCloud } from "lucide-react";
+import InfoBanner from "@/components/InfoBanner";
 
 const modules = [
   { title: "Upload materials", detail: "PDF, DOCX, and TXT intake flow.", icon: UploadCloud },
@@ -25,6 +26,9 @@ export default function Home() {
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-400">
             Your all-in-one platform to upload study materials, understand them faster, practice actively, and track your progress to ace your exams.
           </p>
+          <div className="mt-6">
+            <InfoBanner title="Study streak starter" description="Upload one document today and let StudyMind turn it into a summary, chat context, and quiz practice in minutes." />
+          </div>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700">
               Get Started

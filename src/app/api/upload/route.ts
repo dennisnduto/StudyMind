@@ -8,6 +8,9 @@ import { getUserEntitlement, premiumRequiredPayload } from "@/lib/subscription";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
+const allowedFileExtensions = new Set([".pdf", ".docx", ".txt"]);
+const maxFileSize = 25 * 1024 * 1024;
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -34,13 +37,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "No file uploaded" }, { status: 400 });
     }
 
+    const fileExtension = path.extname(file.name).toLowerCase();
+    if (!allowedFileExtensions.has(fileExtension)) {
+      return NextResponse.json(
+        { success: false, error: "Unsupported file type. Upload a PDF, DOCX, or TXT file." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > maxFileSize) {
+      return NextResponse.json(
+        { success: false, error: "File must be smaller than 25MB." },
+        { status: 400 }
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     
     // Save physical file locally
     const uploadDir = path.join(process.cwd(), "public", "uploads");
     await mkdir(uploadDir, { recursive: true });
     
-    const fileExtension = path.extname(file.name);
     const documentId = crypto.randomUUID();
     const safeFileName = `${documentId}${fileExtension}`;
     const filePath = path.join(uploadDir, safeFileName);
@@ -50,6 +67,12 @@ export async function POST(req: Request) {
 
     // Parse file content
     const content = await parseFile(buffer, fileExtension);
+    if (!content.trim()) {
+      return NextResponse.json(
+        { success: false, error: "No readable text was found in this file." },
+        { status: 400 }
+      );
+    }
 
     // Generate summary using AI service
     const summary = await generateSummary(content);

@@ -87,11 +87,19 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { documentId, content } = body;
+    const documentId = typeof body.documentId === "string" ? body.documentId.trim() : "";
+    const content = typeof body.content === "string" ? body.content.trim() : "";
 
     if (!documentId || !content) {
       return NextResponse.json(
         { error: "documentId and content are required" },
+        { status: 400 }
+      );
+    }
+
+    if (content.length > 4000) {
+      return NextResponse.json(
+        { error: "Message must be 4,000 characters or fewer" },
         { status: 400 }
       );
     }
@@ -105,6 +113,11 @@ export async function POST(req: Request) {
     });
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    const entitlement = await getUserEntitlement(user.id);
+    if (!entitlement?.canUseAi) {
+      return NextResponse.json(premiumRequiredPayload(entitlement!), { status: 402 });
     }
 
     // Find or create chat session
@@ -144,7 +157,7 @@ export async function POST(req: Request) {
     const previousMessages = await prisma.message.findMany({
       where: { chatSessionId: chatSession.id },
       orderBy: { createdAt: "asc" },
-      take: 20, // Limit context
+      take: 20,
     });
 
     // Format chat history for AI utility

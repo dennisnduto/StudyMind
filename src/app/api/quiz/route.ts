@@ -96,11 +96,20 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { quizId, score, total, answers } = body;
+    const { quizId, answers } = body;
+    const score = Number(body.score);
+    const total = Number(body.total);
 
-    if (!quizId || score === undefined || !total) {
+    if (!quizId || !Number.isInteger(score) || !Number.isInteger(total)) {
       return NextResponse.json(
         { error: "quizId, score, and total are required" },
+        { status: 400 }
+      );
+    }
+
+    if (total <= 0 || score < 0 || score > total) {
+      return NextResponse.json(
+        { error: "score must be between 0 and total" },
         { status: 400 }
       );
     }

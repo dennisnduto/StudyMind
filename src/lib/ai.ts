@@ -30,8 +30,9 @@ function isGeneratedQuiz(value: unknown): value is GeneratedQuiz {
       return (
         typeof item.question === "string" &&
         Array.isArray(item.options) &&
+        item.options.length === 4 &&
         item.options.every((option) => typeof option === "string") &&
-        typeof item.correctAnswer === "string" &&
+        ["A", "B", "C", "D"].includes(String(item.correctAnswer)) &&
         typeof item.explanation === "string"
       );
     })
