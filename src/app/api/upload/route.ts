@@ -53,17 +53,6 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    
-    // Save physical file locally
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-    
-    const documentId = crypto.randomUUID();
-    const safeFileName = `${documentId}${fileExtension}`;
-    const filePath = path.join(uploadDir, safeFileName);
-    await writeFile(filePath, buffer);
-    
-    const fileUrl = `/uploads/${safeFileName}`;
 
     // Parse file content
     const content = await parseFile(buffer, fileExtension);
@@ -76,6 +65,17 @@ export async function POST(req: Request) {
 
     // Generate summary using AI service
     const summary = await generateSummary(content);
+
+    // Save physical file locally after content validation succeeds.
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    await mkdir(uploadDir, { recursive: true });
+
+    const documentId = crypto.randomUUID();
+    const safeFileName = `${documentId}${fileExtension}`;
+    const filePath = path.join(uploadDir, safeFileName);
+    await writeFile(filePath, buffer);
+
+    const fileUrl = `/uploads/${safeFileName}`;
 
     // Create Document record
     const document = await prisma.document.create({
