@@ -39,6 +39,30 @@ function isGeneratedQuiz(value: unknown): value is GeneratedQuiz {
   );
 }
 
+function extractJsonPayload(response: string) {
+  const fencedJson = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fencedJson?.[1]) {
+    return fencedJson[1].trim();
+  }
+
+  const firstBrace = response.indexOf("{");
+  const lastBrace = response.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return response.slice(firstBrace, lastBrace + 1);
+  }
+
+  return response.trim();
+}
+
+function parseGeneratedQuizResponse(response: string) {
+  try {
+    const parsed: unknown = JSON.parse(extractJsonPayload(response));
+    return isGeneratedQuiz(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 // Helper to call Gemini API
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -266,9 +290,8 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
   if (geminiKey) {
     try {
       const response = await callGemini(prompt, geminiKey);
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || [null, response];
-      const parsed: unknown = JSON.parse(jsonMatch[1].trim());
-      if (isGeneratedQuiz(parsed)) return parsed;
+      const parsed = parseGeneratedQuizResponse(response);
+      if (parsed) return parsed;
     } catch (e) {
       console.warn("Gemini Quiz failed, falling back to OpenAI/Local", e);
     }
@@ -277,9 +300,8 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
   if (openaiKey) {
     try {
       const response = await callOpenAI(prompt, openaiKey);
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || [null, response];
-      const parsed: unknown = JSON.parse(jsonMatch[1].trim());
-      if (isGeneratedQuiz(parsed)) return parsed;
+      const parsed = parseGeneratedQuizResponse(response);
+      if (parsed) return parsed;
     } catch (e) {
       console.warn("OpenAI Quiz failed, falling back to Local", e);
     }
