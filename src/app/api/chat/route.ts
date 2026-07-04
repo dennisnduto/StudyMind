@@ -19,16 +19,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const entitlement = await getUserEntitlement(user.id);
-    if (!entitlement?.canUseAi) {
-      return NextResponse.json(premiumRequiredPayload(entitlement!), { status: 402 });
-    }
-
     const { searchParams } = new URL(req.url);
     const docId = searchParams.get("docId");
 
     if (!docId) {
       return NextResponse.json({ error: "docId is required" }, { status: 400 });
+    }
+
+    const document = await prisma.document.findFirst({
+      where: {
+        id: docId,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!document) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
     // Find the latest chat session for this user and document
