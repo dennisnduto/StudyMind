@@ -2,11 +2,58 @@
 
 import AppShell from "@/components/AppShell";
 import { Bell, BrainCircuit, Database, Shield, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const preferencesStorageKey = "studymind-preferences";
+const defaultPreferences = {
+  notifications: true,
+  adaptivePlan: true,
+};
+
+function readPreferences() {
+  if (typeof window === "undefined") {
+    return defaultPreferences;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(preferencesStorageKey);
+    if (!stored) {
+      return defaultPreferences;
+    }
+
+    const parsed = JSON.parse(stored) as Partial<typeof defaultPreferences>;
+    return {
+      notifications: typeof parsed.notifications === "boolean" ? parsed.notifications : defaultPreferences.notifications,
+      adaptivePlan: typeof parsed.adaptivePlan === "boolean" ? parsed.adaptivePlan : defaultPreferences.adaptivePlan,
+    };
+  } catch {
+    return defaultPreferences;
+  }
+}
 
 export default function SettingsPage() {
-  const [notifications, setNotifications] = useState(true);
-  const [adaptivePlan, setAdaptivePlan] = useState(true);
+  const [preferences, setPreferences] = useState(defaultPreferences);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+
+  useEffect(() => {
+    setPreferences(readPreferences());
+    setHasLoadedPreferences(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedPreferences) {
+      return;
+    }
+
+    window.localStorage.setItem(preferencesStorageKey, JSON.stringify(preferences));
+  }, [hasLoadedPreferences, preferences]);
+
+  const togglePreference = (key: keyof typeof defaultPreferences) => {
+    setPreferences((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  };
 
   return (
     <AppShell>
@@ -21,8 +68,8 @@ export default function SettingsPage() {
 
         <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
           {[
-            { icon: BrainCircuit, title: "AI recommendation engine", detail: "Personalize suggestions using quiz outcomes and recent materials.", enabled: adaptivePlan, onClick: () => setAdaptivePlan((value) => !value) },
-            { icon: Bell, title: "Study reminders", detail: "Send reminders for planned reviews and unfinished quizzes.", enabled: notifications, onClick: () => setNotifications((value) => !value) },
+            { icon: BrainCircuit, title: "AI recommendation engine", detail: "Personalize suggestions using quiz outcomes and recent materials.", enabled: preferences.adaptivePlan, onClick: () => togglePreference("adaptivePlan") },
+            { icon: Bell, title: "Study reminders", detail: "Send reminders for planned reviews and unfinished quizzes.", enabled: preferences.notifications, onClick: () => togglePreference("notifications") },
           ].map((item) => {
             const Icon = item.icon;
             return (
