@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { CheckCircle2, CreditCard, LockKeyhole, Sparkles } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import PremiumCheckoutButtons from "@/components/PremiumCheckoutButtons";
 
 export default async function PremiumPage() {
   const session = await getServerSession(authOptions);
@@ -45,11 +46,10 @@ export default async function PremiumPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
               Free accounts include {FREE_TRIAL_DAYS} days and {FREE_AI_ACTION_LIMIT} AI actions for uploads, quiz generation, and chat prompts. Premium keeps those tools available without the free quota.
             </p>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <a href="mailto:billing@studymind.ai?subject=StudyMind%20Premium%20subscription" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700">
-                <CreditCard className="h-4 w-4" />
-                Subscribe to Premium
-              </a>
+            {!entitlement.isPremium ? (
+              <PremiumCheckoutButtons />
+            ) : null}
+            <div className="mt-3">
               <Link href="/dashboard" className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800">
                 Back to workspace
               </Link>

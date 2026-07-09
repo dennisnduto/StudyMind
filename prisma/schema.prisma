@@ -49,12 +49,13 @@ model User {
   sessions      Session[]
 
   // StudyMind Specifics
-  documents    Document[]
-  chatSessions ChatSession[]
-  quizzes      Quiz[]
-  studyStats   StudyStats?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  documents      Document[]
+  chatSessions   ChatSession[]
+  quizzes        Quiz[]
+  flashcardDecks FlashcardDeck[]
+  studyStats     StudyStats?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model VerificationToken {
@@ -78,9 +79,10 @@ model Document {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chatSessions ChatSession[] // A document can be associated with multiple chat sessions
-  quizzes      Quiz[]        // A document can generate multiple quizzes
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatSessions   ChatSession[]   // A document can be associated with multiple chat sessions
+  quizzes        Quiz[]          // A document can generate multiple quizzes
+  flashcardDecks FlashcardDeck[] // A document can have multiple flashcard decks
 }
 
 model ChatSession {
@@ -152,4 +154,31 @@ enum UserRole {
 enum SubscriptionPlan {
   FREE
   PREMIUM
+}
+
+model FlashcardDeck {
+  id         String      @id @default(cuid())
+  userId     String
+  documentId String?
+  title      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document?   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  flashcards Flashcard[]
+}
+
+model Flashcard {
+  id           String        @id @default(cuid())
+  deckId       String
+  question     String        @db.Text
+  answer       String        @db.Text
+  isDifficult  Boolean       @default(false)
+  isFavorite   Boolean       @default(false)
+  nextReviewAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  deck FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
 }

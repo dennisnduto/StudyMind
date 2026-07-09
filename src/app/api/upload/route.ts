@@ -8,8 +8,9 @@ import { getUserEntitlement, premiumRequiredPayload } from "@/lib/subscription";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
-const allowedFileExtensions = new Set([".pdf", ".docx", ".txt"]);
-const maxFileSize = 25 * 1024 * 1024;
+const FREE_ALLOWED_EXTENSIONS = new Set([".pdf"]);
+const PREMIUM_ALLOWED_EXTENSIONS = new Set([".pdf", ".docx", ".txt", ".md", ".pptx"]);
+const FREE_MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(req: Request) {
   try {
@@ -38,16 +39,28 @@ export async function POST(req: Request) {
     }
 
     const fileExtension = path.extname(file.name).toLowerCase();
-    if (!allowedFileExtensions.has(fileExtension)) {
+    const allowedExtensions = entitlement?.isPremium ? PREMIUM_ALLOWED_EXTENSIONS : FREE_ALLOWED_EXTENSIONS;
+    
+    if (!allowedExtensions.has(fileExtension)) {
       return NextResponse.json(
-        { success: false, error: "Unsupported file type. Upload a PDF, DOCX, or TXT file." },
+        { 
+          success: false, 
+          code: "PREMIUM_REQUIRED",
+          error: entitlement?.isPremium 
+            ? "Unsupported file type. Upload PDF, DOCX, TXT, MD, or PPTX."
+            : "Free accounts can only upload PDFs. Upgrade to Premium to upload DOCX, TXT, MD, and PPTX files." 
+        },
         { status: 400 }
       );
     }
 
-    if (file.size > maxFileSize) {
+    if (!entitlement?.isPremium && file.size > FREE_MAX_SIZE) {
       return NextResponse.json(
-        { success: false, error: "File must be smaller than 25MB." },
+        { 
+          success: false, 
+          code: "PREMIUM_REQUIRED",
+          error: "Free accounts are limited to 10MB per file. Upgrade to Premium for unlimited file sizes." 
+        },
         { status: 400 }
       );
     }

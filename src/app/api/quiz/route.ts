@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { documentId } = body;
+    const { documentId, difficulty = "Medium", count = 5 } = body;
 
     if (!documentId) {
       return NextResponse.json({ error: "documentId is required" }, { status: 400 });
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       }
 
       // Generate quiz using AI
-      const generated = await generateQuiz(document.title, document.content);
+      const generated = await generateQuiz(document.title, document.content, { difficulty, count });
 
       // Save quiz to DB
       quiz = await prisma.quiz.create({

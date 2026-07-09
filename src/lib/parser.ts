@@ -1,21 +1,25 @@
 import mammoth from "mammoth";
+import { parseOffice } from "officeparser";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
 /**
  * Extracts plain text from a document buffer based on its file extension or type.
- * Supports .txt, .pdf, and .docx files.
+ * Supports .txt, .pdf, .docx, .md, and .pptx files.
  */
 export async function parseFile(buffer: Buffer, fileType: string): Promise<string> {
   const normalizedType = fileType.toLowerCase().replace(/^\./, "");
 
   try {
-    if (normalizedType === "txt") {
+    if (normalizedType === "txt" || normalizedType === "md") {
       return buffer.toString("utf-8");
     }
 
     if (normalizedType === "pdf") {
-      // Dynamic import to avoid build-time ESM/CJS issues
-      // pdf-parse v1 uses CommonJS with a default export
-      const pdfParse = (await import("pdf-parse")).default;
+      // Import from internal path to bypass pdf-parse's test runner,
+      // which tries to open a non-existent file on module load.
+      const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
       const data = await pdfParse(buffer);
       return data.text || "";
     }
@@ -23,6 +27,20 @@ export async function parseFile(buffer: Buffer, fileType: string): Promise<strin
     if (normalizedType === "docx" || normalizedType === "doc") {
       const data = await mammoth.extractRawText({ buffer });
       return data.value || "";
+    }
+
+    if (normalizedType === "pptx") {
+      const tempPath = path.join(os.tmpdir(), `temp-${Date.now()}.pptx`);
+      await fs.writeFile(tempPath, buffer);
+      try {
+        const ast = await parseOffice(tempPath);
+        const text = ast.toText();
+        await fs.unlink(tempPath).catch(() => {}); // cleanup
+        return text || "";
+      } catch (e) {
+        await fs.unlink(tempPath).catch(() => {});
+        throw e;
+      }
     }
 
     throw new Error(`Unsupported file type: ${fileType}`);
