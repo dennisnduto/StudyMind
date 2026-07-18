@@ -81,10 +81,10 @@ function ChatContent() {
         const res = await fetch(`/api/chat?docId=${selectedDocId}`);
         const data = await res.json();
         if (data.success && Array.isArray(data.messages)) {
-          setMessages(data.messages.map((m: any) => ({
-            id: m.id || crypto.randomUUID(),
-            role: m.role as "user" | "assistant",
-            content: m.content,
+          setMessages(data.messages.map((message: Message) => ({
+            id: message.id || crypto.randomUUID(),
+            role: message.role,
+            content: message.content,
           })));
         } else {
           setMessages([]);
@@ -180,8 +180,8 @@ function ChatContent() {
         const content = data.text || data.message?.content || "No response.";
         setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content } : m));
       }
-    } catch (err: any) {
-      if (err.name === "AbortError") return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
       console.error(err);
       setMessages(prev => prev.map(m => m.id === assistantId
         ? { ...m, content: "Failed to get a response. Please try again." }

@@ -4,6 +4,7 @@ import AppShell from "@/components/AppShell";
 import StateMessage from "@/components/StateMessage";
 import { AlertTriangle, CheckCircle2, FileText, Loader2, Sparkles, UploadCloud, X, LockKeyhole } from "lucide-react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -119,7 +120,7 @@ export default function UploadPage() {
                 '--border-color': 'rgba(148, 163, 184, 0.4)',
                 '--bg-active': 'rgba(59, 130, 246, 0.05)',
                 '--bg-idle': 'rgba(248, 250, 252, 0.5)'
-              } as any}
+              } as CSSProperties}
             >
               <label
                 onDragOver={handleDragOver}

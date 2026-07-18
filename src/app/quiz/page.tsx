@@ -5,7 +5,7 @@ import StateMessage from "@/components/StateMessage";
 import { CheckCircle2, FileQuestion, Loader2, Play, Sparkles, UploadCloud, Clock, Target, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
@@ -38,7 +38,7 @@ function QuizContent() {
   const docIdParam = searchParams.get("docId") || "";
 
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(Boolean(docIdParam));
 
   // Configuration State
   const [difficulty, setDifficulty] = useState("Medium");
@@ -51,12 +51,6 @@ function QuizContent() {
   const [shortAnswerText, setShortAnswerText] = useState("");
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
-
-  useEffect(() => {
-    if (!docIdParam) {
-      setIsLoading(false);
-    }
-  }, [docIdParam]);
 
   const generateQuiz = async () => {
     setIsLoading(true);

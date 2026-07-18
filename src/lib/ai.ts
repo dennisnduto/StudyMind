@@ -355,10 +355,18 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
   return getLocalQuiz(documentTitle, content);
 }
 
+export type GeneratedFlashcardDeck = {
+  title: string;
+  flashcards: Array<{
+    question: string;
+    answer: string;
+  }>;
+};
+
 export async function generateFlashcards(
   documentTitle: string,
   content: string
-) {
+): Promise<GeneratedFlashcardDeck> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
@@ -390,7 +398,7 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
   if (geminiKey) {
     try {
       const response = await callGemini(prompt, geminiKey);
-      const json = JSON.parse(extractJsonPayload(response));
+      const json = JSON.parse(extractJsonPayload(response)) as GeneratedFlashcardDeck;
       return json;
     } catch (e) {
       console.warn("Gemini Flashcards failed, falling back to OpenAI/Local", e);
@@ -400,7 +408,7 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
   if (openaiKey) {
     try {
       const response = await callOpenAI(prompt, openaiKey);
-      const json = JSON.parse(extractJsonPayload(response));
+      const json = JSON.parse(extractJsonPayload(response)) as GeneratedFlashcardDeck;
       return json;
     } catch (e) {
       console.warn("OpenAI Flashcards failed, falling back to Local", e);

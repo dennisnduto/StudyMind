@@ -62,9 +62,9 @@ export async function POST(req: Request) {
           documentId: documentId,
           title: generated.title || `${document.title.split(".")[0]} Flashcards`,
           flashcards: {
-            create: generated.flashcards.map((f: any) => ({
-              question: f.question,
-              answer: f.answer
+            create: generated.flashcards.map((flashcard) => ({
+              question: flashcard.question,
+              answer: flashcard.answer
             }))
           }
         },

@@ -36,16 +36,13 @@ function FlashcardsContent() {
   const docIdParam = searchParams.get("docId") || "";
 
   const [deck, setDeck] = useState<Deck | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(Boolean(docIdParam));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
 
   useEffect(() => {
-    if (!docIdParam) {
-      setIsLoading(false);
-      return;
-    }
+    if (!docIdParam) return;
 
     async function loadDeck() {
       setIsLoading(true);
