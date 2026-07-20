@@ -40,6 +40,14 @@ export async function POST(req: Request) {
       include: { flashcards: true }
     });
 
+    const hasLocalWarningOnly = deck?.flashcards.length === 1 && deck.flashcards[0].question === "Local Mode Warning";
+    if (deck && hasLocalWarningOnly) {
+      await prisma.flashcardDeck.delete({
+        where: { id: deck.id },
+      });
+      deck = null;
+    }
+
     if (!deck) {
       // Find document
       const document = await prisma.document.findFirst({

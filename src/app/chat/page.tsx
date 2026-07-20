@@ -3,7 +3,7 @@
 import AppShell from "@/components/AppShell";
 import StateMessage from "@/components/StateMessage";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { Bot, FileText, Loader2, Send, UploadCloud, User, Sparkles, Plus, HelpCircle } from "lucide-react";
+import { Bot, FileText, HelpCircle, Loader2, Plus, Send, Sparkles, Trash2, UploadCloud, User } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, useRef, useCallback } from "react";
@@ -20,12 +20,18 @@ type StudyDocument = {
   fileType: string;
 };
 
+type ApiMessage = {
+  id?: string;
+  role?: string;
+  content?: string;
+};
+
 const SUGGESTED_PROMPTS = [
   "Summarize the key takeaways.",
   "Explain this topic simply.",
-  "Generate 3 exam questions.",
   "What are the most important formulas?",
-  "What topics should I focus on?"
+  "What topics should I focus on?",
+  "Create a quick revision checklist."
 ];
 
 export default function ChatPage() {
@@ -81,10 +87,10 @@ function ChatContent() {
         const res = await fetch(`/api/chat?docId=${selectedDocId}`);
         const data = await res.json();
         if (data.success && Array.isArray(data.messages)) {
-          setMessages(data.messages.map((message: Message) => ({
-            id: message.id || crypto.randomUUID(),
-            role: message.role,
-            content: message.content,
+          setMessages(data.messages.map((m: ApiMessage) => ({
+            id: m.id || crypto.randomUUID(),
+            role: m.role === "user" ? "user" : "assistant",
+            content: m.content || "",
           })));
         } else {
           setMessages([]);
@@ -128,7 +134,7 @@ function ChatContent() {
         const err = await res.json().catch(() => ({ error: "Request failed" }));
         if (err.code === "PREMIUM_REQUIRED") {
           setMessages(prev => prev.map(m => m.id === assistantId
-            ? { ...m, content: "⚠️ " + err.error + " [Upgrade to Premium](/premium)" }
+            ? { ...m, content: `Premium required: ${err.error} [Upgrade to Premium](/premium)` }
             : m
           ));
           return;
@@ -138,39 +144,39 @@ function ChatContent() {
 
       const contentType = res.headers.get("content-type") || "";
 
-      // Handle streaming (text/plain or text/event-stream)
       if (res.body && (contentType.includes("text/") || contentType.includes("stream"))) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let accumulated = "";
+        const isEventStream = contentType.includes("text/event-stream");
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
-          // Strip SSE prefixes if present (e.g. "data: 0:"..."" format)
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6).trim();
-              if (data === "[DONE]") continue;
-              // Try to parse AI SDK data stream chunks
-              try {
-                const parsed = JSON.parse(data);
-                if (typeof parsed === "string") {
-                  accumulated += parsed;
-                } else if (parsed?.type === "text-delta" && parsed?.textDelta) {
-                  accumulated += parsed.textDelta;
+
+          if (isEventStream) {
+            const lines = chunk.split("\n");
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6).trim();
+                if (data === "[DONE]") continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  if (typeof parsed === "string") {
+                    accumulated += parsed;
+                  } else if (parsed?.type === "text-delta" && parsed?.textDelta) {
+                    accumulated += parsed.textDelta;
+                  }
+                } catch {
+                  if (data && !data.startsWith("{")) accumulated += data;
                 }
-              } catch {
-                // Plain text delta
-                if (data && !data.startsWith("{")) accumulated += data;
               }
-            } else if (!line.startsWith(":") && line.trim() !== "") {
-              // Non-SSE plain text
-              accumulated += line;
             }
+          } else {
+            accumulated += chunk;
           }
+
           const current = accumulated;
           setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: current } : m));
         }
@@ -181,7 +187,7 @@ function ChatContent() {
         setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content } : m));
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") return;
+      if (err instanceof DOMException && err.name === "AbortError") return;
       console.error(err);
       setMessages(prev => prev.map(m => m.id === assistantId
         ? { ...m, content: "Failed to get a response. Please try again." }
@@ -195,6 +201,24 @@ function ChatContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
+  };
+
+  const clearChat = async () => {
+    if (!selectedDocId || isStreaming) return;
+
+    const previousMessages = messages;
+    setMessages([]);
+    try {
+      const res = await fetch(`/api/chat?docId=${selectedDocId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        setMessages(previousMessages);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessages(previousMessages);
+    }
   };
 
   if (isLoadingDocs) {
@@ -253,12 +277,21 @@ function ChatContent() {
       <section className="relative flex flex-1 flex-col">
         {/* Header */}
         <header className="z-10 flex items-center gap-3 border-b border-slate-200 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-[#15171b]/80">
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">{selectedDoc.title}</h2>
             <p className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
               <Sparkles className="h-3 w-3" /> Grounded AI Chat
             </p>
           </div>
+          <button
+            type="button"
+            onClick={clearChat}
+            disabled={messages.length === 0 || isStreaming}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <Trash2 className="h-4 w-4" />
+            Clear
+          </button>
         </header>
 
         {/* Messages */}
@@ -277,6 +310,7 @@ function ChatContent() {
               <div className="grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
                 {SUGGESTED_PROMPTS.map(prompt => (
                   <button
+                    type="button"
                     key={prompt}
                     onClick={() => sendMessage(prompt)}
                     className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left text-sm font-medium text-slate-700 transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-[#1a1d23] dark:text-slate-300 dark:hover:border-blue-500/50"
@@ -300,11 +334,11 @@ function ChatContent() {
                     }`}>
                       {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                     </div>
-                    <div className={`flex max-w-[85%] flex-col ${isUser ? "items-end" : "items-start"}`}>
+                    <div className={`flex flex-col ${isUser ? "max-w-[85%] items-end" : "max-w-[92%] items-start sm:max-w-[88%]"}`}>
                       <span className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                         {isUser ? "You" : "StudyMind AI"}
                       </span>
-                      <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm ${
+                      <div className={`rounded-2xl px-5 py-4 text-[15px] leading-relaxed shadow-sm ${
                         isUser
                           ? "rounded-tr-sm bg-blue-600 text-white"
                           : "rounded-tl-sm border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-[#1a1d23] dark:text-slate-200"

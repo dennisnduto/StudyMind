@@ -52,7 +52,7 @@ export default function LoginPage() {
         </Link>
         <div className="mt-8 text-center">
           <h1 className="text-2xl font-bold">Welcome back</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Sign in once the backend auth service is ready.</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Sign in to continue your study workspace.</p>
         </div>
         {error && <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">{error}</div>}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">

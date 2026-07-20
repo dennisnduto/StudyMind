@@ -14,5 +14,6 @@ export const config = {
     "/upload/:path*",
     "/analytics/:path*",
     "/settings/:path*",
+    "/admin/:path*",
   ],
 };

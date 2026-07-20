@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { FREE_AI_ACTION_LIMIT, FREE_TRIAL_DAYS, getUserEntitlement } from "@/lib/subscription";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { CheckCircle2, CreditCard, LockKeyhole, Sparkles } from "lucide-react";
+import { CheckCircle2, LockKeyhole, Sparkles } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import PremiumCheckoutButtons from "@/components/PremiumCheckoutButtons";
@@ -32,8 +32,13 @@ export default async function PremiumPage() {
     redirect("/login");
   }
 
-  const usagePercent = entitlement.isPremium
-    ? 100
+  const trialTotalMs = FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000;
+  const trialRemainingMs = Math.max(0, entitlement.trialEndsAt.getTime() - entitlement.evaluatedAt.getTime());
+  const trialDaysRemaining = Math.ceil(trialRemainingMs / (24 * 60 * 60 * 1000));
+  const accessPercent = entitlement.isPremium || entitlement.trialActive
+    ? entitlement.isPremium
+      ? 100
+      : Math.min(100, Math.round(((trialTotalMs - trialRemainingMs) / trialTotalMs) * 100))
     : Math.min(100, Math.round((entitlement.usedActions / FREE_AI_ACTION_LIMIT) * 100));
 
   return (
@@ -44,7 +49,7 @@ export default async function PremiumPage() {
             <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Premium subscription</p>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Keep StudyMind working after your free access ends.</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-              Free accounts include {FREE_TRIAL_DAYS} days and {FREE_AI_ACTION_LIMIT} AI actions for uploads, quiz generation, and chat prompts. Premium keeps those tools available without the free quota.
+              Free accounts get a full {FREE_TRIAL_DAYS}-day AI trial. After the trial, starter accounts keep {FREE_AI_ACTION_LIMIT} AI actions for uploads, quiz generation, and chat prompts.
             </p>
             {!entitlement.isPremium ? (
               <PremiumCheckoutButtons />
@@ -67,12 +72,14 @@ export default async function PremiumPage() {
               </span>
             </div>
             <div className="mt-5 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
-              <div className="h-2 rounded-full bg-blue-600" style={{ width: `${usagePercent}%` }} />
+              <div className="h-2 rounded-full bg-blue-600" style={{ width: `${accessPercent}%` }} />
             </div>
             <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
               {entitlement.isPremium
                 ? "Premium AI access is active."
-                : `${entitlement.remainingActions} free AI actions remaining. Trial ends ${entitlement.trialEndsAt.toLocaleDateString()}.`}
+                : entitlement.trialActive
+                  ? `${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left in your full AI trial. Starter action limits begin after ${entitlement.trialEndsAt.toLocaleDateString()}.`
+                  : `${entitlement.remainingActions} starter AI actions remaining.`}
             </p>
           </div>
         </section>

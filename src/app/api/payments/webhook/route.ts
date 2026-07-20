@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     let body;
     try {
       body = JSON.parse(rawBody);
-    } catch (e) {
+    } catch {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         if (signature !== coinbaseSignature) {
           return NextResponse.json({ error: "Invalid Coinbase signature" }, { status: 401 });
         }
-      } catch (err) {
+      } catch {
         return NextResponse.json({ error: "Signature verification failed" }, { status: 401 });
       }
 

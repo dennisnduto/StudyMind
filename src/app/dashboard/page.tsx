@@ -1,5 +1,4 @@
 import Link from "next/link";
-import StateMessage from "@/components/StateMessage";
 import StatCard from "@/components/StatCard";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -162,7 +161,7 @@ export default async function DashboardPage() {
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Pick up where you left off</p>
             </div>
             <Link href="/upload" className="text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1">
-              View All <ArrowRight className="h-4 w-4" />
+              Upload New <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           

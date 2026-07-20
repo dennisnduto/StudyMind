@@ -9,7 +9,6 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const allowedTypes = [".pdf", ".docx", ".txt", ".md", ".pptx"];
-const premiumTypes = [".docx", ".txt", ".md", ".pptx"];
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -62,8 +61,6 @@ export default function UploadPage() {
 
     const fileName = selectedFile.name.toLowerCase();
     const hasAllowedType = allowedTypes.some((type) => fileName.endsWith(type));
-    const isPremiumType = premiumTypes.some((type) => fileName.endsWith(type));
-
     if (!hasAllowedType) {
       setFile(null);
       setStatus("error");
@@ -72,8 +69,6 @@ export default function UploadPage() {
     }
 
     setFile(selectedFile);
-    // Note: API still enforces limits, but we let them select it first.
-    // If it's a premium type and they hit submit, the API will return PREMIUM_REQUIRED.
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -117,9 +112,9 @@ export default function UploadPage() {
               }}
               className="relative"
               style={{
-                '--border-color': 'rgba(148, 163, 184, 0.4)',
-                '--bg-active': 'rgba(59, 130, 246, 0.05)',
-                '--bg-idle': 'rgba(248, 250, 252, 0.5)'
+                "--border-color": "rgba(148, 163, 184, 0.4)",
+                "--bg-active": "rgba(59, 130, 246, 0.05)",
+                "--bg-idle": "rgba(248, 250, 252, 0.5)",
               } as CSSProperties}
             >
               <label
@@ -136,7 +131,7 @@ export default function UploadPage() {
                   {isDragging ? "Drop file here" : "Click or drag file to upload"}
                 </span>
                 <span className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  PDF, DOCX, PPTX, MD, or TXT up to 25MB
+                  Free: PDF up to 10MB. Premium: PDF, DOCX, PPTX, MD, and TXT.
                 </span>
                 <input
                   id="material"
@@ -268,7 +263,7 @@ export default function UploadPage() {
                 </div>
                 <h2 className="mt-6 text-2xl font-bold text-slate-900 dark:text-white">This file type is available on StudyMind Premium.</h2>
                 <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Upgrade to unlock DOCX, TXT, PowerPoint, Markdown, unlimited file sizes, unlimited AI conversations, and advanced learning tools.
+                  Upgrade to unlock DOCX, TXT, PowerPoint, Markdown, larger study files, ongoing AI conversations, and advanced learning tools.
                 </p>
                 
                 <div className="mt-8 flex flex-col gap-3">

@@ -73,7 +73,7 @@ export default function RegisterPage() {
         </Link>
         <div className="mt-8 text-center">
           <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Collect the fields needed for the real auth flow.</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Start a workspace for your notes, quizzes, and progress.</p>
         </div>
         {error && <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">{error}</div>}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -97,11 +97,6 @@ export default function RegisterPage() {
             Create account
           </button>
         </form>
-        <div className="mt-3 text-center">
-          <Link href="/dashboard" className="text-sm font-semibold text-blue-600 hover:underline dark:text-blue-400">
-            Go to Dashboard
-          </Link>
-        </div>
         <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
           Already have an account? <Link className="font-bold text-blue-700 dark:text-blue-300" href="/login">Sign in</Link>
         </p>

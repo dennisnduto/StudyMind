@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { generateChatResponse } from "@/lib/ai";
 import { getUserEntitlement, premiumRequiredPayload } from "@/lib/subscription";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -130,9 +131,19 @@ export async function POST(req: Request) {
       create: { userId: user.id, lastStudiedAt: new Date() },
     });
 
-    const systemPrompt = `You are a helpful, premium AI study assistant. Answer the user's questions grounded ONLY in the following document context.
-If the answer is unavailable inside the document, clearly state that instead of inventing information.
-Use markdown for lists, tables, and bold text to make your answers easy to read.
+    const systemPrompt = `You are StudyMind AI, a clear and patient study tutor. Answer the user's questions grounded ONLY in the document context.
+If the answer is unavailable inside the document, say so clearly and offer the closest relevant context from the document.
+
+Formatting rules:
+- Write like ChatGPT: readable paragraphs with breathing room, not one dense block.
+- Use 2-4 short paragraphs when explaining an idea.
+- Use bullet points when listing facts, steps, causes, effects, advantages, disadvantages, examples, or revision points.
+- Use numbered steps for processes, sequences, methods, or instructions.
+- Use a markdown table only when comparing two or more items.
+- Use **bold** for key terms, but do not overdo it.
+- Add a short "Quick revision" section when the answer is study-focused or exam-focused.
+- Keep the answer concise unless the user asks for detail.
+- Do not force every answer into the same template; choose the structure that best fits the question.
 
 --- DOCUMENT START ---
 Title: ${document.title}
@@ -197,8 +208,7 @@ Content: ${document.content.substring(0, 15000)}
       return result.toTextStreamResponse();
     }
 
-    // Local fallback if no API keys
-    const fallbackMessage = "No AI provider configured. Please add a GEMINI_API_KEY or OPENAI_API_KEY in your .env file.";
+    const fallbackMessage = await generateChatResponse(document.content, previousMessages, userMessage);
     await prisma.message.create({
       data: {
         chatSessionId: chatSession.id,
@@ -212,5 +222,51 @@ Content: ${document.content.substring(0, 15000)}
   } catch (error: unknown) {
     console.error("Chat POST API error:", error);
     return new Response("Internal Server Error", { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const docId = searchParams.get("docId");
+
+    if (!docId) {
+      return NextResponse.json({ error: "docId is required" }, { status: 400 });
+    }
+
+    const chatSession = await prisma.chatSession.findFirst({
+      where: { userId: user.id, documentId: docId },
+      select: { id: true },
+    });
+
+    if (!chatSession) {
+      return NextResponse.json({ success: true });
+    }
+
+    await prisma.message.deleteMany({
+      where: { chatSessionId: chatSession.id },
+    });
+
+    await prisma.chatSession.update({
+      where: { id: chatSession.id },
+      data: { updatedAt: new Date() },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    console.error("Chat DELETE API error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

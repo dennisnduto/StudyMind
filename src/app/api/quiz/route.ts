@@ -31,39 +31,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "documentId is required" }, { status: 400 });
     }
 
-    // Check if quiz already exists for this document
-    let quiz = await prisma.quiz.findFirst({
+    const existingQuiz = await prisma.quiz.findFirst({
       where: {
         userId: user.id,
         documentId: documentId,
       },
     });
 
-    if (!quiz) {
-      // Find document
-      const document = await prisma.document.findFirst({
-        where: {
-          id: documentId,
-          userId: user.id,
-        },
-      });
-      if (!document) {
-        return NextResponse.json({ error: "Document not found" }, { status: 404 });
-      }
-
-      // Generate quiz using AI
-      const generated = await generateQuiz(document.title, document.content, { difficulty, count });
-
-      // Save quiz to DB
-      quiz = await prisma.quiz.create({
-        data: {
-          userId: user.id,
-          documentId: documentId,
-          title: generated.title || `${document.title.split(".")[0]} Quiz`,
-          questions: generated.questions,
-        },
-      });
+    const document = await prisma.document.findFirst({
+      where: {
+        id: documentId,
+        userId: user.id,
+      },
+    });
+    if (!document) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
+
+    const generated = await generateQuiz(document.title, document.content, { difficulty, count });
+
+    const quiz = existingQuiz
+      ? await prisma.quiz.update({
+          where: { id: existingQuiz.id },
+          data: {
+            title: generated.title || `${document.title.split(".")[0]} Quiz`,
+            questions: generated.questions,
+            createdAt: new Date(),
+          },
+        })
+      : await prisma.quiz.create({
+          data: {
+            userId: user.id,
+            documentId: documentId,
+            title: generated.title || `${document.title.split(".")[0]} Quiz`,
+            questions: generated.questions,
+          },
+        });
 
     return NextResponse.json({
       success: true,

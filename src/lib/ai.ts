@@ -134,17 +134,39 @@ function getLocalChatResponse(content: string, userMessage: string): string {
   });
 
   if (matches.length > 0) {
-    return `Based on your notes: "${matches.slice(0, 2).join(". ")}." (Local search response)`;
+    return [
+      "## Answer from your notes",
+      "",
+      matches.slice(0, 3).map((match) => `- ${match}.`).join("\n"),
+      "",
+      "## What to revise",
+      "",
+      "- Focus on the terms and relationships in the points above.",
+      "- If you need exam practice, ask for questions about this specific topic.",
+    ].join("\n");
   }
 
-  return `I found no direct references to your question in the text. Here is a summary of the document to help guide you: ${getLocalSummary(content)}`;
+  return [
+    "## I could not find that directly",
+    "",
+    "I could not find a clear match for your question inside the uploaded material.",
+    "",
+    "## Closest useful summary",
+    "",
+    getLocalSummary(content),
+    "",
+    "## Next step",
+    "",
+    "- Try asking with a keyword or phrase that appears in the document.",
+  ].join("\n");
 }
 
-function getLocalQuiz(documentTitle: string, content: string): GeneratedQuiz {
+function getLocalQuiz(documentTitle: string, content: string, options?: { difficulty?: string; count?: number }): GeneratedQuiz {
   const clean = content.replace(/\s+/g, " ").trim();
   const sentences = clean.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
+  const requestedCount = Math.min(Math.max(options?.count || 5, 3), 20);
+  const difficulty = options?.difficulty || "Medium";
 
-  // We want to generate 3 questions.
   const questions: QuizQuestion[] = [];
   const definitionSentences = sentences.filter(s => 
     s.includes(" is ") || s.includes(" are ") || s.includes(" depends ") || s.includes(" because ")
@@ -152,11 +174,34 @@ function getLocalQuiz(documentTitle: string, content: string): GeneratedQuiz {
 
   const pool = definitionSentences.length >= 3 ? definitionSentences : sentences;
 
-  for (let i = 0; i < Math.min(3, pool.length); i++) {
-    const statement = pool[i];
+  for (let i = 0; i < requestedCount; i++) {
+    const statement = pool[i % Math.max(pool.length, 1)] || clean || documentTitle;
+    const questionType = i % 3 === 1 ? "tf" : i % 3 === 2 ? "short" : "mcq";
+    if (questionType === "tf") {
+      questions.push({
+        type: "tf",
+        question: `True or false: ${statement}`,
+        options: ["True", "False"],
+        correctAnswer: "True",
+        explanation: `This statement is taken from the document: "${statement}".`,
+      });
+      continue;
+    }
+
+    if (questionType === "short") {
+      questions.push({
+        type: "short",
+        question: `In your own words, explain this ${difficulty.toLowerCase()} concept: "${statement}"`,
+        options: [],
+        correctAnswer: statement.split(/\s+/).slice(0, 8).join(" "),
+        explanation: `A strong answer should capture the meaning of this document point: "${statement}".`,
+      });
+      continue;
+    }
+
     questions.push({
       type: "mcq",
-      question: `Review this statement: "${statement}". What is the core study takeaway?`,
+      question: `Review this ${difficulty.toLowerCase()} statement: "${statement}". What is the core study takeaway?`,
       options: [
         `A) This is a key foundational concept for ${documentTitle.split(".")[0]}.`,
         "B) This statement is incorrect or unrelated to the exam syllabus.",
@@ -185,8 +230,39 @@ function getLocalQuiz(documentTitle: string, content: string): GeneratedQuiz {
   }
 
   return {
-    title: `${documentTitle.split(".")[0]} Quiz`,
+    title: `${documentTitle.split(".")[0]} ${difficulty} Quiz`,
     questions,
+  };
+}
+
+function getLocalFlashcards(documentTitle: string, content: string): GeneratedFlashcardDeck {
+  const clean = content.replace(/\s+/g, " ").trim();
+  const sentences = clean.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
+  const usefulSentences = sentences
+    .filter((sentence) => sentence.length > 30)
+    .slice(0, 10);
+
+  const flashcards = usefulSentences.map((sentence, index) => {
+    const keyword = sentence
+      .split(/\s+/)
+      .find((word) => word.length > 5 && /^[A-Za-z]/.test(word)) || `Concept ${index + 1}`;
+
+    return {
+      question: `What should you remember about ${keyword.replace(/[^A-Za-z0-9-]/g, "")}?`,
+      answer: sentence,
+    };
+  });
+
+  if (flashcards.length === 0) {
+    flashcards.push({
+      question: `What is the main topic of ${documentTitle}?`,
+      answer: clean || `The uploaded document is titled "${documentTitle}". Add more readable text for richer flashcards.`,
+    });
+  }
+
+  return {
+    title: `${documentTitle.split(".")[0]} Flashcards`,
+    flashcards,
   };
 }
 
@@ -259,7 +335,16 @@ export async function generateChatResponse(
   const openaiKey = process.env.OPENAI_API_KEY;
 
   const contextPrompt = `
-You are a study assistant. Answer the user's question grounded ONLY in the following document context:
+You are StudyMind AI, a clear study tutor. Answer the user's question grounded ONLY in the following document context.
+
+Format naturally:
+- Use short paragraphs for explanations.
+- Use bullet points for lists, facts, examples, causes, effects, or revision points.
+- Use numbered steps for processes.
+- Use a markdown table only for comparisons.
+- Add a brief "Quick revision" section when useful.
+- Do not return one dense paragraph.
+
 ---
 ${content.slice(0, 12000)}
 ---
@@ -352,7 +437,7 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
     }
   }
 
-  return getLocalQuiz(documentTitle, content);
+  return getLocalQuiz(documentTitle, content, { difficulty, count });
 }
 
 export type GeneratedFlashcardDeck = {
@@ -415,13 +500,5 @@ Respond with ONLY valid JSON inside a code block, formatted like this:
     }
   }
 
-  return {
-    title: documentTitle,
-    flashcards: [
-      {
-        question: "Local Mode Warning",
-        answer: "Please add an API key to automatically generate high-quality flashcards."
-      }
-    ]
-  };
+  return getLocalFlashcards(documentTitle, content);
 }

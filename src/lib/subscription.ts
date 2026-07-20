@@ -85,22 +85,24 @@ export async function getUserEntitlement(userId: string) {
     }),
   ]);
 
+  const evaluatedAt = new Date();
   const trialEndsAt = getTrialEndsAt(user.createdAt);
   const usedActions = uploadCount + quizCount + messageCount;
   const premium = hasPremiumAccess(user);
-  const trialActive = trialEndsAt > new Date();
+  const trialActive = trialEndsAt > evaluatedAt;
   const withinUsageLimit = usedActions < FREE_AI_ACTION_LIMIT;
-  const canUseAi = premium || (trialActive && withinUsageLimit);
+  const canUseAi = premium || trialActive || withinUsageLimit;
 
   return {
     user,
     plan: premium ? "PREMIUM" : "FREE",
     canUseAi,
     isPremium: premium,
+    evaluatedAt,
     trialEndsAt,
     trialActive,
     usedActions,
-    remainingActions: premium ? null : Math.max(FREE_AI_ACTION_LIMIT - usedActions, 0),
+    remainingActions: premium || trialActive ? null : Math.max(FREE_AI_ACTION_LIMIT - usedActions, 0),
     freeActionLimit: FREE_AI_ACTION_LIMIT,
     freeTrialDays: FREE_TRIAL_DAYS,
   };
@@ -110,7 +112,7 @@ export function premiumRequiredPayload(entitlement: NonNullable<Awaited<ReturnTy
   return {
     success: false,
     code: "PREMIUM_REQUIRED",
-    error: "Your free access has ended. Upgrade to Premium to keep using AI study tools.",
+    error: "Your free trial and starter AI actions have ended. Upgrade to Premium to keep using AI study tools.",
     entitlement: {
       trialEndsAt: entitlement.trialEndsAt.toISOString(),
       usedActions: entitlement.usedActions,

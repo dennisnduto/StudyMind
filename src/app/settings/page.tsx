@@ -1,7 +1,7 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
-import { Bell, BrainCircuit, Database, Shield, SlidersHorizontal } from "lucide-react";
+import { Bell, BrainCircuit, Moon, Shield, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const preferencesStorageKey = "studymind-preferences";
@@ -52,14 +52,14 @@ export default function SettingsPage() {
           <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Settings</p>
           <h1 className="mt-2 text-3xl font-bold">Tune your study workspace.</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-            Frontend controls for preferences, notifications, AI behavior, and security states.
+            Choose lightweight preferences for reminders and study recommendations on this device.
           </p>
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15171b]">
           {[
-            { icon: BrainCircuit, title: "AI recommendation engine", detail: "Personalize suggestions using quiz outcomes and recent materials.", enabled: preferences.adaptivePlan, onClick: () => togglePreference("adaptivePlan") },
-            { icon: Bell, title: "Study reminders", detail: "Send reminders for planned reviews and unfinished quizzes.", enabled: preferences.notifications, onClick: () => togglePreference("notifications") },
+            { icon: BrainCircuit, title: "Adaptive suggestions", detail: "Prioritize next actions from your recent materials and quiz outcomes.", enabled: preferences.adaptivePlan, onClick: () => togglePreference("adaptivePlan") },
+            { icon: Bell, title: "Reminder nudges", detail: "Show study reminder prompts inside your workspace.", enabled: preferences.notifications, onClick: () => togglePreference("notifications") },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -89,8 +89,8 @@ export default function SettingsPage() {
         <section className="grid gap-4 sm:grid-cols-3">
           {[
             { icon: Shield, title: "Auth", detail: "NextAuth ready" },
-            { icon: Database, title: "Data", detail: "Prisma schema ready" },
-            { icon: SlidersHorizontal, title: "Theme", detail: "Header toggle ready" },
+            { icon: Moon, title: "Theme", detail: "Use the header toggle" },
+            { icon: SlidersHorizontal, title: "Preferences", detail: "Saved locally" },
           ].map((item) => {
             const Icon = item.icon;
             return (

@@ -2,12 +2,11 @@
 
 import AppShell from "@/components/AppShell";
 import StateMessage from "@/components/StateMessage";
-import { CheckCircle2, FileQuestion, Loader2, Play, Sparkles, UploadCloud, Clock, Target, AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, FileText, Loader2, Play, Sparkles, Target, UploadCloud } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 type QuizQuestion = {
   type: "mcq" | "tf" | "short";
@@ -21,6 +20,12 @@ type QuizData = {
   quizId: string;
   title: string;
   questions: QuizQuestion[];
+};
+
+type StudyDocument = {
+  id: string;
+  title: string;
+  fileType: string;
 };
 
 export default function QuizPage() {
@@ -37,8 +42,11 @@ function QuizContent() {
   const searchParams = useSearchParams();
   const docIdParam = searchParams.get("docId") || "";
 
+  const [documents, setDocuments] = useState<StudyDocument[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState(docIdParam);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [isLoading, setIsLoading] = useState(Boolean(docIdParam));
+  const [isLoading, setIsLoading] = useState(false);
 
   // Configuration State
   const [difficulty, setDifficulty] = useState("Medium");
@@ -52,13 +60,35 @@ function QuizContent() {
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
 
+  useEffect(() => {
+    async function loadDocuments() {
+      try {
+        const res = await fetch("/api/documents");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.documents)) {
+          setDocuments(data.documents);
+          if (!docIdParam && data.documents.length > 0) {
+            setSelectedDocId(data.documents[0].id);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingDocuments(false);
+      }
+    }
+    loadDocuments();
+  }, [docIdParam]);
+
   const generateQuiz = async () => {
+    if (!selectedDocId) return;
+
     setIsLoading(true);
     try {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: docIdParam, difficulty, count: questionCount }),
+        body: JSON.stringify({ documentId: selectedDocId, difficulty, count: questionCount }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -81,23 +111,26 @@ function QuizContent() {
   };
 
   const handleNext = () => {
+    let nextAnswers = answers;
+
     if (quizData?.questions[currentQuestionIndex].type === "short") {
-      setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: shortAnswerText }));
+      nextAnswers = { ...answers, [currentQuestionIndex]: shortAnswerText };
+      setAnswers(nextAnswers);
       setShortAnswerText("");
     }
 
     if (currentQuestionIndex < (quizData?.questions.length || 0) - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      finishQuiz();
+      finishQuiz(nextAnswers);
     }
   };
 
-  const finishQuiz = async () => {
+  const finishQuiz = async (submittedAnswers = answers) => {
     if (!quizData) return;
 
     let finalScore = 0;
-    const finalAnswers = { ...answers };
+    const finalAnswers = { ...submittedAnswers };
     
     // Quick auto-grade
     quizData.questions.forEach((q, idx) => {
@@ -130,15 +163,19 @@ function QuizContent() {
     }
   };
 
-  if (isLoading && !hasStarted && docIdParam) {
+  if (isLoadingDocuments) {
+    return <StateMessage title="Loading materials" description="Finding documents you can practice with." icon={Loader2} iconClassName="animate-spin text-blue-600" />;
+  }
+
+  if (isLoading && !hasStarted) {
     return <StateMessage title="Preparing Quiz" description="Extracting context and generating questions..." icon={Loader2} iconClassName="animate-spin text-blue-600" />;
   }
 
-  if (!docIdParam) {
+  if (documents.length === 0) {
     return (
       <StateMessage
-        title="No document selected"
-        description="Please upload or select a document to generate a quiz."
+        title="No materials available"
+        description="Upload a document before starting quiz practice."
         icon={UploadCloud}
         action={<Link href="/upload" className="inline-flex rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white">Upload material</Link>}
       />
@@ -156,6 +193,30 @@ function QuizContent() {
           <p className="mt-2 text-slate-500 dark:text-slate-400">Custom practice tests generated instantly from your notes.</p>
           
           <div className="mt-8 space-y-6">
+            <div>
+              <label className="text-sm font-bold text-slate-900 dark:text-white">Study Material</label>
+              <div className="mt-2 space-y-2">
+                {documents.map((document) => (
+                  <button
+                    key={document.id}
+                    type="button"
+                    onClick={() => setSelectedDocId(document.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                      selectedDocId === document.id
+                        ? "border-blue-600 bg-blue-50 text-blue-900 dark:border-blue-500 dark:bg-blue-900/20 dark:text-blue-100"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-[#15171b] dark:text-slate-300"
+                    }`}
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold">{document.title}</span>
+                      <span className="block text-xs uppercase text-slate-500 dark:text-slate-400">{document.fileType}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-bold text-slate-900 dark:text-white">Difficulty</label>
               <div className="mt-2 grid grid-cols-3 gap-3">
@@ -189,7 +250,7 @@ function QuizContent() {
 
             <button
               onClick={generateQuiz}
-              disabled={isLoading}
+              disabled={isLoading || !selectedDocId}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
             >
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
